@@ -1,17 +1,22 @@
-# foodloop
+# FoodLoop: Flutter app
 
-A new Flutter project.
+The Flutter frontend (web and Android) for FoodLoop. Setup, test logins and the
+demo script are in the [root README](../README.md); the design system is in
+[DESIGN.md](../DESIGN.md).
 
-## Getting Started
+```bash
+flutter pub get
+flutter run -d chrome          # needs the backend on http://localhost:5000
+flutter analyze
+```
 
-This project is a starting point for a Flutter application.
+Layout of `lib/`:
 
-A few resources to get you started if this is your first Flutter project:
-
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+| Folder | What is in it |
+|---|---|
+| `core/` | Theme tokens (`theme/`), router, API client, config, responsive helpers |
+| `models/` | Plain data classes parsed from the API |
+| `services/` | One class per API area (auth, food, claims, pickups, ...) |
+| `providers/` | App state (`provider` package) |
+| `screens/` | `auth`, `recipient`, `donor`, `volunteer`, `admin`, `common` |
+| `widgets/` | Signature components: TokenCard, StatusStamp, ReceiptTimeline, Chalkboard, ... |
