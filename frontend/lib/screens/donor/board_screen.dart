@@ -159,7 +159,8 @@ class _BoardLine extends StatelessWidget {
     // line closing within the hour has that time in turmeric (8.19:1 on the
     // board) and the screen-reader label says how long is left.
     final note = '#${l.tokenNumber} · ${Fmt.quantity(l.quantity, l.unit)} · '.toUpperCase();
-    final until = 'UNTIL ${Fmt.time(l.pickupDeadline)}';
+    // Non-breaking spaces: "UNTIL 5:46 PM" moves to the next line whole.
+    final until = 'UNTIL ${Fmt.timeKept(l.pickupDeadline)}';
     // "none left" is in turmeric below, so a fully reserved line stands out.
     final leftText = l.available == 0 ? 'none left' : '${l.available} left';
 

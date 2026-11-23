@@ -1,7 +1,20 @@
 # FoodLoop: Screenshot Pass Findings
 
-Date: 2026-11-23. This is plan step 3 in `PROGRESS.md`. **Nothing here has been
-fixed yet.** This list is for review before any fixes.
+Date: 2026-11-23. This is plan step 3 in `PROGRESS.md`.
+
+**Status (end of 2026-11-23):** F1–F36 are fixed (commits `84e9c17`,
+`cba4c99`, `f51310d`, `892550a` and the final check) except:
+- **F14: not a bug.** Re-measured on `admin-assign-1440-paper`: the dialog
+  spans x 480–960, centred in the 1440 viewport. The original coordinates were
+  wrong.
+- **F11 (gallery part):** token cards in the gallery's 768 grid still differ in
+  height when one title wraps. The gallery is a debug-only screen, so this is
+  accepted.
+- **F34:** not reproduced in the final screenshots (`final-*`); no code cause
+  found.
+
+The final check screenshots are `docs/screenshots/final-*` (7 screens, 360 and
+1440, both modes).
 
 ## How the screenshots were taken
 

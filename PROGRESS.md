@@ -69,8 +69,8 @@ files (clean). The UI has **not** been run or screenshotted yet.
 | Postman collection with negative tests (over-allocation, wrong role, invalid transition), 80 requests | **Done.** Passed 2026-11-23 on a fresh seed: 80 requests, 231 assertions, 0 failures. `backend/postman/FoodLoop.postman_collection.json`, `npm run test:api` (needs the backend running) |
 | Playwright screenshots at 360, 768, 1440 px, paper and chalkboard modes | **Captured.** `docs/screenshots/`, `docs/FINDINGS.md`. High findings F1–F3 fixed; Medium and Low remain |
 | Dark mode visual check | **Done** as part of the screenshots (see F2 in `docs/FINDINGS.md`) |
-| `/impeccable audit` and `/impeccable polish` | **Missing** (the only critique file in `.impeccable/critique/` is about an old JSX page, not this app) |
-| review-animations | **Missing** |
+| `/impeccable audit` and `/impeccable polish` | **Done** 2026-11-23. Native (Flutter) audit from source: 17/20 (A11y 3, Perf 4, Theming 4, Conformance 3, Adaptivity 3). Its three P2s (focus visibility) were fixed in `892550a`. The skill's `audit-storage` helper does not exist in this version, so the report summary lives here |
+| review-animations | **Not run.** Only the user can start it (`/review-animations`); the Skill tool refuses it |
 | Root `README.md` (setup, test logins, demo script) | **Done** |
 | `frontend/README.md` and pubspec `description` | **Done** |
 
@@ -153,16 +153,38 @@ Done on 2026-11-23:
 5. ~~Root `README.md`~~ and ~~frontend README / pubspec description~~.
 6. Final check: `flutter analyze` is clean and `npm run test:api` passes. The database was re-seeded afterwards.
 
-**Remaining** (not started; wait for the user's go-ahead):
+Done later on 2026-11-23 (second session):
 
-- **Medium findings in `docs/FINDINGS.md`:**
-  - F4–F8: contrast and accessibility.
-  - F9–F17: layout and spacing.
-  - F18–F23: generic or off-concept screens.
-- **Low findings:** F24–F36 (copy, data and consistency).
-- **`/impeccable audit` and `/impeccable polish`** across the whole app.
-- **review-animations** on the app.
-- **Android:** the Gradle/Java build error has not been looked at.
+7. All Medium and Low findings are fixed, in grouped commits: layout `84e9c17`,
+   contrast and concept `cba4c99`, copy and formats `f51310d`, and audit and
+   polish `892550a`, plus the final-check commit. F14 was not a bug; see the
+   status at the top of `docs/FINDINGS.md`.
+8. Final screenshots: `docs/screenshots/final-*` (feed, listing detail, donor
+   board, requests, admin overview, volunteer pickups and login, at 360 and
+   1440, in both modes). Two problems found there were fixed afterwards: the
+   board's "UNTIL 5:46 PM" broke before "PM", and `noOrphan` stranded "Veg" on
+   short receipt titles. Neither fix was re-screenshotted: after a failed hot
+   restart, the Playwright browser kept crashing on the debug bundle
+   (ERR_INSUFFICIENT_RESOURCES).
+9. `flutter analyze` reports no issues. `npm run test:api`: 80 requests, 231
+   assertions, 0 failures. The database was re-seeded afterwards.
+
+**Still open:**
+
+- **The Android build fails (skipped after two tries).** `flutter build apk --debug`
+  stops at `android/build.gradle.kts` line 19 with "Android sdkmanager did not
+  install NDK 28.2.13676358". No NDK is installed, and the deprecated
+  `sdkmanager` reports "Package ndk not found". I removed `ndkVersion` from
+  `android/app/build.gradle.kts`, but that did not help: Flutter's Gradle plugin
+  still asks for the NDK. I reverted that change. To fix: in Android Studio, open
+  SDK Manager > SDK Tools > NDK (Side by side), tick "Show package details",
+  install version 28.2.13676358, and rebuild.
+- **review-animations:** run `/review-animations` yourself.
+- **The MongoDB service stopped** during the session, and starting it needs
+  admin rights. The final checks ran against a temporary `mongod` with a scratch
+  data folder; the real data folder under Program Files was not touched. Before
+  a demo, start the `MongoDB` service as admin and run `npm run seed`.
+- After a fresh `flutter run`, recheck the board and requests screens at 360.
 
 How to re-check screens: re-seed first, because `npm run test:api` adds test data
 and changes user IDs, so saved JWTs stop working. Then run the debug server with
@@ -199,8 +221,9 @@ is git-ignored because the scripts contain local JWTs.
   (project scope), and `.claude/settings.json` sets `MCP_TIMEOUT` to 120000.
   A fresh session must approve them. Both connected on 2026-11-23. If one times
   out, start its command by hand in a terminal to see the real error.
-- **Android:** VS Code shows a Gradle/Java build error. It is an Android build
-  issue and has not been looked at. Web is the target for screenshots.
+- **Android:** the debug build needs NDK 28.2.13676358 (see "Still open" in
+  section 4). Web is the target for screenshots.
+- **url_launcher** was added so volunteers can tap to call from a pickup slip.
 - **git push:** Git Credential Manager handles GitHub sign-in. One push in this
   session waited about 2 minutes on it before completing by itself.
 

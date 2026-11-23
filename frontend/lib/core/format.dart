@@ -46,13 +46,19 @@ abstract final class Fmt {
     return d.inHours < 12 ? ago(t) : time(t);
   }
 
-  /// Joins the last two words with a non-breaking space, so a heading or a
-  /// sentence never ends on a line with one word on it ("Counter / 2").
+  /// Joins a SHORT last word to the word before it with a non-breaking space,
+  /// so a heading or sentence never ends on a line holding only "2" or "in.".
+  /// Long last words are left alone: gluing "Grilled Sandwiches" together
+  /// would strand "Veg" on its own line instead.
   static String noOrphan(String s) {
-    final i = s.trimRight().lastIndexOf(' ');
-    if (i <= 0) return s;
-    return '${s.substring(0, i)} ${s.substring(i + 1)}';
+    final t = s.trimRight();
+    final i = t.lastIndexOf(' ');
+    if (i <= 0 || t.length - i - 1 > 5) return s;
+    return '${t.substring(0, i)} ${t.substring(i + 1)}';
   }
+
+  /// "4:30 PM" that never breaks between the time and AM/PM.
+  static String timeKept(DateTime t) => time(t).replaceAll(' ', ' ');
 
   /// Indian mobile numbers in two groups of five ("90000 00003"). Anything
   /// that is not ten plain digits is shown as it was typed.

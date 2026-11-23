@@ -127,8 +127,12 @@ class _ReceiptRow extends StatelessWidget {
             builder: (context, box) => Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // A short value (a count, "--:--") leaves room, so its label
+                // may take more of the line instead of wrapping.
                 ConstrainedBox(
-                  constraints: BoxConstraints(maxWidth: box.maxWidth * 0.36),
+                  constraints: BoxConstraints(
+                    maxWidth: box.maxWidth * ((entry.value ?? '--:--').length <= 8 ? 0.6 : 0.36),
+                  ),
                   child: Text(entry.label, style: style),
                 ),
                 Expanded(

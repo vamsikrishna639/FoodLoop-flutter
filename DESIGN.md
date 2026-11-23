@@ -178,7 +178,7 @@ impact number (72–96) is what makes screens look editorial instead of uniform.
 
 | Style | Where it lives | Font | Size / line height | Weight | Tracking | Use |
 |---|---|---|---|---|---|---|
-| `impact` | `context.fl.impact` | Bricolage | 72 default / 0.95; the screen passes its own size (96 admin feature block, 64 volunteer, 44 small figures) | 800 | -2.0 | ImpactNumber |
+| `impact` | `context.fl.impact` | Bricolage | 72 default / 0.95; the screen passes its own size (96 admin feature block, 64 volunteer tally beside the runs from 640px content width, 44 small figures such as "portions received" on My requests) | 800 | -2.0 | ImpactNumber |
 | `displayLarge` | `TextTheme` | Bricolage | 56 / 1.0 | 800 | -1.5 | Onboarding headline |
 | `displayMedium` | `TextTheme` | Bricolage | 44 / 1.05 | 700 | -1.0 | Screen hero titles (desktop) |
 | `displaySmall` | `TextTheme` | Bricolage | 36 / 1.1 | 700 | -0.8 | Screen titles (mobile) |
@@ -302,7 +302,7 @@ Every interactive component defines all of these states.
 | Default | As specified |
 | Hover (web, desktop) | Slip lifts to elevation 1 and the outline darkens to `controlBorder`; buttons darken about 10%; cursor becomes `SystemMouseCursors.click` |
 | Pressed | `Pressable` scales to 0.98 on slips and buttons (transform only, off under reduced motion) |
-| Focused | `Pressable` draws a 2px `ink` ring on the element's own edge (no offset), in front of the content so it is never clipped. On the dark board (sidebar, rail) the ring is 3px `turmeric`. Inputs show a 2px ink edge instead. Never removed; keyboard users must see it |
+| Focused | `Pressable` draws a 2px `ink` ring on the element's own edge (no offset), in front of the content so it is never clipped. On the dark board (sidebar, rail) the ring is 3px `turmeric`. When the control is selected (ink-filled tag, chalk label on the board) a `paper` / `board` keyline sits just inside the ring so it stays visible. Inputs show a 2px ink edge instead. Never removed; keyboard users must see it |
 | Disabled | Buttons become a sunken paper slot (`surfaceSunken` fill, `controlBorder` outline, `inkSoft` label), never a faded fill. The Admin role slip is 60% opacity with "Not here" printed on it |
 | Loading | Button keeps its size and colour and is disabled; the label is replaced by a short loading label whose three dots print one by one ("Signing in.", "..", "..."), in the button's own font. The dots stay still under reduced motion |
 | Error | `chilliDeep` border, a small mono message in `chilliDeep` below the field with a warning icon, announced by a semantic label |
@@ -319,8 +319,10 @@ Minimum tap target is 48×48 logical pixels (`minimumSize` in the button themes,
   colours.
 - **Outline:** 1.5px `ink` border, ink label.
 - `FlButton` has exactly these three variants. Low-emphasis actions use a plain
-  Material `TextButton`, themed with an ink label, a 48×48 minimum and no
-  underline.
+  Material `TextButton`, themed like a printed link: ink label, no side padding
+  (so it lines up with the text above), a 48 minimum height, an underline on
+  hover, and a 2px ink edge on keyboard focus. `InlineLink` puts one at the end
+  of a sentence in the sentence's own type size.
 - Minimum height 48 for every button (`minimumSize` in the button themes), radius
   `FlRadius.control`, label `labelLarge`. Tappable pickers in forms (the
   date-time fields) are 52 tall.
@@ -444,6 +446,22 @@ depends on colour. The marks are `slipDone`, `slipError` and `paper` (section 1.
 background (set in the theme) for 4 seconds; a fixed 420px wide on screens 600px
 and wider. It is a live region, so screen readers announce it.
 
+### DocketSlip (`docket_slip.dart`)
+The kitchen copy of an order, for anything waiting on a decision: a donor's
+incoming request, an approved request waiting for a volunteer, an account
+waiting for approval (phone layout). A `surface` slip with a `surfaceSunken`
+stub on the LEFT (76px; 64 for accounts) holding one figure (`DocketFigure`:
+24px bold mono number over a `monoSmall` caption, e.g. "6 / PACKETS"), a
+vertical perforation with a notch at its top and bottom ends, and the body on
+the right. It grows with its content.
+
+### Alerts docket spike (`alerts_screen.dart`)
+Each alert is a small printed slip with a hole that sits on a 2px
+`controlBorder` spike running down the left of each day group. Unread slips
+are `surface` with the word UNREAD; read slips turn `surfaceSunken`. Inside a
+day group lines print only the time. The desktop activity rail is hidden on
+Alerts because it would repeat the same events.
+
 ### SkeletonToken (`skeleton_token.dart`)
 A loader in the exact shape of a TokenCard (same notches and stub height) with a
 slow opacity pulse (1.1s, 45% to 100%, static when reduced motion is on). No
@@ -453,7 +471,8 @@ spinners for content.
 A simple illustration drawn with Flutter shapes (`CustomPainter` or icons: an
 empty plate, a clear counter, a blank slip), a warm specific line of copy ("The
 counter's clear. Check back after lunch service."), and one action. Error states
-use the same layout with a retry button.
+use the same layout with a retry button and their own drawing (a slip torn in
+two, chilli mark), so a failure never looks like an empty list.
 
 ### Other shared widgets
 `FadeUp` and `FadeIn` (first-load entrance), `Pressable` (press scale),
@@ -470,8 +489,8 @@ One `ResponsiveShell` (`responsive_shell.dart`), three breakpoints, mobile first
 
 | `ScreenSize` | Width | Navigation | Content |
 |---|---|---|---|
-| `mobile` | `< 600` | Bottom bar (68px) with a raised centre action ("Post food" for donor, "Browse" for recipient) | One column; forms are bottom sheets (`showModalBottomSheet`) |
-| `tablet` | `600–1024` | Dark navigation rail (92px), icons over labels | Two columns; detail opens as a side panel next to the list |
+| `mobile` | `< 600` | Bottom bar (68px) with a raised centre action ("Post food" for donor, "Browse" for recipient). An action that is itself a page (Browse = the counter) replaces that page's tab and shows the selected dash. The action pokes 28px above the bar (`ResponsiveShell.raisedOverhang`), which phone scroll views add to their bottom padding | One column; forms are bottom sheets on the root navigator (`useRootNavigator: true`), so the scrim covers the bar |
+| `tablet` | `600–1024` | Dark navigation rail (92px), icons over labels; the red action tile carries its label too | Two columns; detail opens as a side panel next to the list |
 | `desktop` | `> 1024` | Menu-board sidebar (248): logo, nav, user chip | Main area plus a right activity rail (304); sidebar, content and rail together are at most 1320 wide (`Breakpoints.maxContent`), left-aligned; dialogs (`showDialog`) instead of sheets |
 
 Rules:
@@ -485,12 +504,24 @@ Rules:
   (the listing form, the volunteer-assignment form) checks `context.isMobile` to
   choose.
 
+Entry screens (welcome, sign in, register) use the split layout (board panel
+plus form) from 720px, so a portrait tablet gets it too; below 1100px the panel
+heading steps down to `displaySmall`. Phones show a short board band: logo,
+chalk underline and the strapline in `monoSmall`.
+
+Text never ends on an orphaned short word: `Fmt.noOrphan` joins a last word of
+up to 5 characters to the one before it (ledes, receipt titles).
+
 Screens differ on purpose:
 - **Recipient feed ("Today's Counter")** — a counter of token slips under a large title.
 - **Donor dashboard** — a chalkboard block above a queue of requests.
 - **Volunteer** — receipt-led pickup cards with one large action.
-- **Admin** — asymmetric: one large impact block, a chart, then a table on
-  desktop (cards on mobile).
+- **Admin** — asymmetric: a printed weekly report (torn receipt edges, the
+  96px figure, the chart, print line at its foot) with the smaller "Right now"
+  receipt beside it, then the "Needs a volunteer" dockets; approvals are a table
+  on desktop (docket slips on mobile).
+- **Post food form** — three ruled docket parts (WHAT, HOW MUCH, WHERE AND
+  WHEN) and a live "on the board it reads" preview line on a small board.
 
 Never four identical stat cards in a row. Never centred-everything.
 

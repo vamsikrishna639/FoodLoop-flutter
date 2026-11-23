@@ -171,7 +171,8 @@ Things to show along the way:
 
 ## 8. Notes
 
-- **Android:** VS Code currently shows a Gradle/Java build error for the Android
-  target. It has not been investigated; web is the tested target.
+- **Android:** `flutter build apk` needs NDK 28.2.13676358. Install it from
+  Android Studio (SDK Manager > SDK Tools > NDK (Side by side)). Web is the
+  tested target.
 - **Progress and known issues:** see [PROGRESS.md](PROGRESS.md) and
   [docs/FINDINGS.md](docs/FINDINGS.md).
