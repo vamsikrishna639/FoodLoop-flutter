@@ -93,6 +93,11 @@ polish.
   (`donor-alerts-1440-paper`).
 - The notification `createdAt` and the activity timestamp disagree. This is
   either the seed script or the activity source.
+- **Fixed.** The cause was the seed data. Farhan's 5-box claim had no
+  `createdAt`, so it took the time the seed ran, while its notification was
+  hard-coded to 38 minutes earlier. The activity feed (which reads the claim's
+  `createdAt`) and the real API were correct. The seed now gives every claim a
+  time, and the "requested" notifications read their claim's `createdAt`.
 
 ---
 
