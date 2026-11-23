@@ -6,7 +6,7 @@ function validate(req, res, next) {
   const result = validationResult(req);
   if (result.isEmpty()) return next();
 
-  // Keep the first message per field so the app can show it under the input.
+  // Keep the first message per field so the app can show  under the input.
   const errors = {};
   for (const e of result.array()) {
     if (!errors[e.path]) errors[e.path] = e.msg;
