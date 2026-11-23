@@ -1,0 +1,24 @@
+{
+  "name": "foodloop-backend",
+  "version": "1.0.0",
+  "description": "FoodLoop API - surplus food redistribution (MCA mini-project)",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "seed": "node seed/seed.js",
+    "create-admin": "node scripts/createAdmin.js",
+    "test:api": "npx -y newman@6.2.1 run postman/FoodLoop.postman_collection.json"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.10",
+    "express": "^5.3.0",
+    "express-validator": "^7.3.2",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^9.12.1",
+    "morgan": "^1.12.1"
+  }
+}

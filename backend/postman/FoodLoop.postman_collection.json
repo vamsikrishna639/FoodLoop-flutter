@@ -1,0 +1,3589 @@
+{
+  "info": {
+    "name": "FoodLoop API",
+    "_postman_id": "b4c1b7d0-5f1e-4c55-9a61-f00d1009f001",
+    "description": "Checks for the FoodLoop API, including the negative tests for the business rules\n(over-allocation, wrong role, invalid status changes, duplicate requests and runs).\n\nHow to run:\n1. In backend/: npm run seed, then npm start (API on http://localhost:5000).\n2. Import this file into Postman (or Thunder Client: Collections > Import).\n3. Run the whole collection in order with the Collection Runner.\n   The requests depend on each other: earlier ones save tokens and ids\n   into collection variables that later ones use.\n\nThe run creates its own listing (\"Postman Test Pulao\"), so it needs only the\nseeded logins. It does change data (requests, a delivered run), so run\nnpm run seed again before a demo.\n\nCommand line: npx newman run postman/FoodLoop.postman_collection.json",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000/api"
+    },
+    {
+      "key": "password",
+      "value": "password123"
+    },
+    {
+      "key": "adminToken",
+      "value": ""
+    },
+    {
+      "key": "donorToken",
+      "value": ""
+    },
+    {
+      "key": "ananyaToken",
+      "value": ""
+    },
+    {
+      "key": "farhanToken",
+      "value": ""
+    },
+    {
+      "key": "kiranToken",
+      "value": ""
+    },
+    {
+      "key": "meeraToken",
+      "value": ""
+    },
+    {
+      "key": "rohitToken",
+      "value": ""
+    },
+    {
+      "key": "listingId",
+      "value": ""
+    },
+    {
+      "key": "expiredListingId",
+      "value": ""
+    },
+    {
+      "key": "claimAnanya",
+      "value": ""
+    },
+    {
+      "key": "claimFarhan",
+      "value": ""
+    },
+    {
+      "key": "pickupId",
+      "value": ""
+    },
+    {
+      "key": "kiranId",
+      "value": ""
+    },
+    {
+      "key": "ananyaId",
+      "value": ""
+    },
+    {
+      "key": "adminId",
+      "value": ""
+    },
+    {
+      "key": "rohitId",
+      "value": ""
+    },
+    {
+      "key": "preparedAt",
+      "value": ""
+    },
+    {
+      "key": "deadline",
+      "value": ""
+    },
+    {
+      "key": "pastDeadline",
+      "value": ""
+    }
+  ],
+  "event": [
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "{",
+          "  pm.test(\"Response uses the { success, message, data } envelope\", () => {",
+          "  const json = pm.response.json();",
+          "  pm.expect(json).to.have.property(\"success\");",
+          "  pm.expect(json.message).to.be.a(\"string\");",
+          "  pm.expect(json).to.have.property(\"data\");",
+          "  });",
+          "}"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Sign in",
+      "description": "Health check, then a token for each seeded account.",
+      "item": [
+        {
+          "name": "Health check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "  pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "  pm.test(\"success is true\", () => pm.expect(pm.response.json().success).to.eql(true));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Public impact number",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/impact",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "impact"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "  pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "  pm.test(\"Has a portions figure\", () => pm.expect(pm.response.json().data).to.be.an(\"object\"));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Log in as admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@foodloop.test\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "  pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "  const data = pm.response.json().data;",
+                  "  pm.collectionVariables.set(\"adminToken\", data.token);",
+                  "  pm.test(\"Returns a token and a user without a password hash\", () => {",
+                  "    pm.expect(data.token).to.be.a(\"string\");",
+                  "    pm.expect(data.user).to.not.have.property(\"passwordHash\");",
+                  "  });",
+                  "  pm.collectionVariables.set(\"adminId\", data.user.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Log in as donor (canteen)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"canteen@foodloop.test\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "  pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "  const data = pm.response.json().data;",
+                  "  pm.collectionVariables.set(\"donorToken\", data.token);",
+                  "  pm.test(\"Returns a token and a user without a password hash\", () => {",
+                  "    pm.expect(data.token).to.be.a(\"string\");",
+                  "    pm.expect(data.user).to.not.have.property(\"passwordHash\");",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Log in as recipient Ananya",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"ananya@foodloop.test\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "  pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "  const data = pm.response.json().data;",
+                  "  pm.collectionVariables.set(\"ananyaToken\", data.token);",
+                  "  pm.test(\"Returns a token and a user without a password hash\", () => {",
+                  "    pm.expect(data.token).to.be.a(\"string\");",
+                  "    pm.expect(data.user).to.not.have.property(\"passwordHash\");",
+                  "  });",
+                  "  pm.collectionVariables.set(\"ananyaId\", data.user.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Log in as recipient Farhan",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"farhan@foodloop.test\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "  pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "  const data = pm.response.json().data;",
+                  "  pm.collectionVariables.set(\"farhanToken\", data.token);",
+                  "  pm.test(\"Returns a token and a user without a password hash\", () => {",
+                  "    pm.expect(data.token).to.be.a(\"string\");",
+                  "    pm.expect(data.user).to.not.have.property(\"passwordHash\");",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Log in as volunteer Kiran",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"kiran@foodloop.test\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "  pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "  const data = pm.response.json().data;",
+                  "  pm.collectionVariables.set(\"kiranToken\", data.token);",
+                  "  pm.test(\"Returns a token and a user without a password hash\", () => {",
+                  "    pm.expect(data.token).to.be.a(\"string\");",
+                  "    pm.expect(data.user).to.not.have.property(\"passwordHash\");",
+                  "  });",
+                  "  pm.collectionVariables.set(\"kiranId\", data.user.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Log in as volunteer Meera",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"meera@foodloop.test\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "  pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "  const data = pm.response.json().data;",
+                  "  pm.collectionVariables.set(\"meeraToken\", data.token);",
+                  "  pm.test(\"Returns a token and a user without a password hash\", () => {",
+                  "    pm.expect(data.token).to.be.a(\"string\");",
+                  "    pm.expect(data.user).to.not.have.property(\"passwordHash\");",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Log in as pending recipient Rohit",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"rohit@foodloop.test\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "  pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "  const data = pm.response.json().data;",
+                  "  pm.collectionVariables.set(\"rohitToken\", data.token);",
+                  "  pm.test(\"Returns a token and a user without a password hash\", () => {",
+                  "    pm.expect(data.token).to.be.a(\"string\");",
+                  "    pm.expect(data.user).to.not.have.property(\"passwordHash\");",
+                  "  });",
+                  "  pm.collectionVariables.set(\"rohitId\", data.user.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Auth and access (negative)",
+      "item": [
+        {
+          "name": "Wrong password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"ananya@foodloop.test\",\n  \"password\": \"wrong-password\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "  pm.test(\"Status is 401\", () => pm.response.to.have.status(401));",
+                  "  pm.test(\"success is false\", () => pm.expect(pm.response.json().success).to.eql(false));",
+                  "  pm.test(\"Message mentions 'Incorrect email or password'\", () => pm.expect(pm.response.json().message).to.include(\"Incorrect email or password\"));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Register as admin is refused",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Sneaky\",\n  \"email\": \"sneaky-admin@foodloop.test\",\n  \"password\": \"password123\",\n  \"role\": \"admin\",\n  \"phone\": \"9876543210\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "        pm.test(\"Status is 400\", () => pm.response.to.have.status(400));",
+                  "        pm.test(\"Field error on role\", () => pm.expect(pm.response.json().data.errors).to.have.property(\"role\"));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Register with bad fields",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"A\",\n  \"email\": \"not-an-email\",\n  \"password\": \"123\",\n  \"role\": \"donor\",\n  \"phone\": \"abc\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "        pm.test(\"Status is 400\", () => pm.response.to.have.status(400));",
+                  "        pm.test(\"One message per bad field\", () => {",
+                  "          const errors = pm.response.json().data.errors;",
+                  "          pm.expect(errors).to.include.keys(\"name\", \"email\", \"password\", \"phone\");",
+                  "        });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Register with an email already in use",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Ananya Again\",\n  \"email\": \"ananya@foodloop.test\",\n  \"password\": \"password123\",\n  \"role\": \"recipient\",\n  \"phone\": \"9876543210\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "  pm.test(\"Status is 409\", () => pm.response.to.have.status(409));",
+                  "  pm.test(\"Field error on email\", () => pm.expect(pm.response.json().data.errors).to.have.property(\"email\"));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "No token",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/foods",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "foods"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "  pm.test(\"Status is 401\", () => pm.response.to.have.status(401));",
+                  "  pm.test(\"Message mentions 'log in'\", () => pm.expect(pm.response.json().message).to.include(\"log in\"));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Broken token",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{password}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/foods",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "foods"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "  pm.test(\"Status is 401\", () => pm.response.to.have.status(401));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Pending account can read its own status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{rohitToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "me"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "  pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "  pm.test(\"Status is pending\", () => pm.expect(pm.response.json().data.user.verificationStatus).to.eql(\"pending\"));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Pending account cannot browse food",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{rohitToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/foods",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "foods"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "  pm.test(\"Status is 403\", () => pm.response.to.have.status(403));",
+                  "  pm.test(\"Message mentions 'waiting for admin approval'\", () => pm.expect(pm.response.json().message).to.include(\"waiting for admin approval\"));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Recipient cannot list users (wrong role)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ananyaToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "  pm.test(\"Status is 403\", () => pm.response.to.have.status(403));",
+                  "  pm.test(\"Message mentions 'Only admin'\", () => pm.expect(pm.response.json().message).to.include(\"Only admin\"));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Unknown route",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/nothing-here",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "nothing-here"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "  pm.test(\"Status is 404\", () => pm.response.to.have.status(404));",
+                  "  pm.test(\"success is false\", () => pm.expect(pm.response.json().success).to.eql(false));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Listings",
+      "item": [
+        {
+          "name": "Donor posts a test listing (10 boxes)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{donorToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/foods",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "foods"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Postman Test Pulao\",\n  \"description\": \"Created by the Postman collection.\",\n  \"quantity\": 10,\n  \"unit\": \"boxes\",\n  \"location\": \"Main Block Canteen counter\",\n  \"preparedAt\": \"{{preparedAt}}\",\n  \"pickupDeadline\": \"{{deadline}}\",\n  \"foodType\": \"veg\",\n  \"allergenNotes\": \"None declared.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "        // Dates relative to now: prepared 30 minutes ago, pickup in 3 hours.",
+                  "        const now = Date.now();",
+                  "        pm.collectionVariables.set(\"preparedAt\", new Date(now - 30 * 60000).toISOString());",
+                  "        pm.collectionVariables.set(\"deadline\", new Date(now + 3 * 3600000).toISOString());",
+                  "        pm.collectionVariables.set(\"pastDeadline\", new Date(now - 3600000).toISOString());",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "        pm.test(\"Status is 201\", () => pm.response.to.have.status(201));",
+                  "        const listing = pm.response.json().data.listing;",
+                  "        pm.collectionVariables.set(\"listingId\", listing.id);",
+                  "        pm.test(\"Token number looks like FL-0042\", () => pm.expect(listing.tokenNumber).to.match(/^FL-\\d{4}$/));",
+                  "        pm.test(\"Starts available with nothing reserved\", () => {",
+                  "          pm.expect(listing.status).to.eql(\"available\");",
+                  "          pm.expect(listing.reservedQuantity).to.eql(0);",
+                  "          pm.expect(listing.availableQuantity).to.eql(10);",
+                  "        });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Recipient cannot post food (wrong role)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ananyaToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/foods",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "foods"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Not allowed\",\n  \"quantity\": 1,\n  \"unit\": \"boxes\",\n  \"location\": \"Hostel\",\n  \"preparedAt\": \"{{preparedAt}}\",\n  \"pickupDeadline\": \"{{deadline}}\",\n  \"foodType\": \"veg\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "  pm.test(\"Status is 403\", () => pm.response.to.have.status(403));",
+                  "  pm.test(\"Message mentions 'Only donor'\", () => pm.expect(pm.response.json().message).to.include(\"Only donor\"));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Deadline in the past is refused",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{donorToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/foods",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "foods"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Old Rice\",\n  \"quantity\": 5,\n  \"unit\": \"kg\",\n  \"location\": \"Counter\",\n  \"preparedAt\": \"{{preparedAt}}\",\n  \"pickupDeadline\": \"{{pastDeadline}}\",\n  \"foodType\": \"veg\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "  pm.test(\"Status is 400\", () => pm.response.to.have.status(400));",
+                  "  pm.test(\"Field error on pickupDeadline\", () => pm.expect(pm.response.json().data.errors).to.have.property(\"pickupDeadline\"));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Missing fields are listed one by one",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{donorToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/foods",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "foods"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"\",\n  \"quantity\": 0,\n  \"unit\": \"buckets\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "        pm.test(\"Status is 400\", () => pm.response.to.have.status(400));",
+                  "        pm.test(\"Errors for title, quantity, unit and more\", () => {",
+                  "          pm.expect(pm.response.json().data.errors).to.include.keys(\"title\", \"quantity\", \"unit\", \"location\", \"foodType\");",
+                  "        });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Volunteer cannot edit a listing (wrong role)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{kiranToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/foods/{{listingId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "foods",
+                "{{listingId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Changed\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "  pm.test(\"Status is 403\", () => pm.response.to.have.status(403));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Server-owned fields are ignored on edit",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{donorToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/foods/{{listingId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "foods",
+                "{{listingId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reservedQuantity\": 9,\n  \"status\": \"completed\",\n  \"tokenNumber\": \"FL-9999\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "        pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "        const l = pm.response.json().data.listing;",
+                  "        pm.test(\"reservedQuantity, status and tokenNumber unchanged\", () => {",
+                  "          pm.expect(l.reservedQuantity).to.eql(0);",
+                  "          pm.expect(l.status).to.eql(\"available\");",
+                  "          pm.expect(l.tokenNumber).to.not.eql(\"FL-9999\");",
+                  "        });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Find an expired listing",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ananyaToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/foods?status=expired",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "foods"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "expired"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "        pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "        const expired = pm.response.json().data.listings;",
+                  "        pm.test(\"The seed has at least one expired listing\", () => pm.expect(expired.length).to.be.above(0));",
+                  "        if (expired.length) pm.collectionVariables.set(\"expiredListingId\", expired[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bad listing id gives 400, not a crash",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ananyaToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/foods/not-an-id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "foods",
+                "not-an-id"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "  pm.test(\"Status is 400\", () => pm.response.to.have.status(400));",
+                  "  pm.test(\"success is false\", () => pm.expect(pm.response.json().success).to.eql(false));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. Requests (claims)",
+      "item": [
+        {
+          "name": "Asking for more than the listing has",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{farhanToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/claims",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "claims"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"listingId\": \"{{listingId}}\",\n  \"requestedQuantity\": 11\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "  pm.test(\"Status is 400\", () => pm.response.to.have.status(400));",
+                  "  pm.test(\"Message mentions 'Only 10 boxes left'\", () => pm.expect(pm.response.json().message).to.include(\"Only 10 boxes left\"));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ananya requests 6 boxes",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ananyaToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/claims",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "claims"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"listingId\": \"{{listingId}}\",\n  \"requestedQuantity\": 6,\n  \"note\": \"For the evening meal at the shelter.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "        pm.test(\"Status is 201\", () => pm.response.to.have.status(201));",
+                  "        const claim = pm.response.json().data.claim;",
+                  "        pm.collectionVariables.set(\"claimAnanya\", claim.id);",
+                  "        pm.test(\"Request is pending\", () => pm.expect(claim.status).to.eql(\"pending\"));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Farhan requests 6 boxes (allowed: nothing is reserved yet)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{farhanToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/claims",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "claims"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"listingId\": \"{{listingId}}\",\n  \"requestedQuantity\": 6\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "  pm.test(\"Status is 201\", () => pm.response.to.have.status(201));",
+                  "  pm.collectionVariables.set(\"claimFarhan\", pm.response.json().data.claim.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Second open request for the same listing (rule 7)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ananyaToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/claims",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "claims"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"listingId\": \"{{listingId}}\",\n  \"requestedQuantity\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "  pm.test(\"Status is 409\", () => pm.response.to.have.status(409));",
+                  "  pm.test(\"Message mentions 'already have a request'\", () => pm.expect(pm.response.json().message).to.include(\"already have a request\"));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Request on an expired listing (rule 3)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ananyaToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/claims",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "claims"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"listingId\": \"{{expiredListingId}}\",\n  \"requestedQuantity\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "  pm.test(\"Status is 400\", () => pm.response.to.have.status(400));",
+                  "  pm.test(\"Message mentions 'closed'\", () => pm.expect(pm.response.json().message).to.include(\"closed\"));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Donor cannot request food (wrong role)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{donorToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/claims",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "claims"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"listingId\": \"{{listingId}}\",\n  \"requestedQuantity\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "  pm.test(\"Status is 403\", () => pm.response.to.have.status(403));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Recipient cannot approve (wrong role)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ananyaToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/claims/{{claimAnanya}}/approve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "claims",
+                "{{claimAnanya}}",
+                "approve"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "  pm.test(\"Status is 403\", () => pm.response.to.have.status(403));",
+                  "  pm.test(\"Message mentions 'Only donor'\", () => pm.expect(pm.response.json().message).to.include(\"Only donor\"));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin cannot approve either (donor only)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/claims/{{claimAnanya}}/approve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "claims",
+                "{{claimAnanya}}",
+                "approve"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "  pm.test(\"Status is 403\", () => pm.response.to.have.status(403));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Donor approves Ananya (6 of 10 reserved)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{donorToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/claims/{{claimAnanya}}/approve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "claims",
+                "{{claimAnanya}}",
+                "approve"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "        pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "        const claim = pm.response.json().data.claim;",
+                  "        pm.test(\"Claim approved\", () => pm.expect(claim.status).to.eql(\"approved\"));",
+                  "        pm.test(\"Listing has 6 reserved, 4 left\", () => {",
+                  "          pm.expect(claim.listingId.reservedQuantity).to.eql(6);",
+                  "          pm.expect(claim.listingId.availableQuantity).to.eql(4);",
+                  "        });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "OVER-ALLOCATION: approving Farhan (6 > 4 left) is refused",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{donorToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/claims/{{claimFarhan}}/approve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "claims",
+                "{{claimFarhan}}",
+                "approve"
+              ]
+            },
+            "description": "Rule 1. The reservation is one conditional findOneAndUpdate ($expr + $inc); it matches nothing here."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "  pm.test(\"Status is 400\", () => pm.response.to.have.status(400));",
+                  "  pm.test(\"Message mentions 'Only 4 boxes left'\", () => pm.expect(pm.response.json().message).to.include(\"Only 4 boxes left\"));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listing still has exactly 6 reserved",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{donorToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/foods/{{listingId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "foods",
+                "{{listingId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "        pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "        const l = pm.response.json().data.listing;",
+                  "        pm.test(\"Nothing was over-reserved\", () => pm.expect(l.reservedQuantity).to.eql(6));",
+                  "        pm.test(\"Still available\", () => pm.expect(l.status).to.eql(\"available\"));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Farhan's refused request went back to pending",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{farhanToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/claims/mine",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "claims",
+                "mine"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "        pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "        const c = pm.response.json().data.claims.find((x) => x.id === pm.collectionVariables.get(\"claimFarhan\"));",
+                  "        pm.test(\"Status is pending\", () => pm.expect(c.status).to.eql(\"pending\"));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "INVALID TRANSITION: approve an approved request",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{donorToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/claims/{{claimAnanya}}/approve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "claims",
+                "{{claimAnanya}}",
+                "approve"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "  pm.test(\"Status is 400\", () => pm.response.to.have.status(400));",
+                  "  pm.test(\"Message mentions 'cannot be approved'\", () => pm.expect(pm.response.json().message).to.include(\"cannot be approved\"));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "INVALID TRANSITION: reject an approved request",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{donorToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/claims/{{claimAnanya}}/reject",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "claims",
+                "{{claimAnanya}}",
+                "reject"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "  pm.test(\"Status is 400\", () => pm.response.to.have.status(400));",
+                  "  pm.test(\"Message mentions 'cannot be turned down'\", () => pm.expect(pm.response.json().message).to.include(\"cannot be turned down\"));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ananya cannot cancel Farhan's request",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ananyaToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/claims/{{claimFarhan}}/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "claims",
+                "{{claimFarhan}}",
+                "cancel"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "  pm.test(\"Status is 403\", () => pm.response.to.have.status(403));",
+                  "  pm.test(\"Message mentions 'your own requests'\", () => pm.expect(pm.response.json().message).to.include(\"your own requests\"));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Donor turns down Farhan's request",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{donorToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/claims/{{claimFarhan}}/reject",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "claims",
+                "{{claimFarhan}}",
+                "reject"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "  pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "  pm.test(\"Rejected\", () => pm.expect(pm.response.json().data.claim.status).to.eql(\"rejected\"));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "INVALID TRANSITION: approve a turned-down request",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{donorToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/claims/{{claimFarhan}}/approve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "claims",
+                "{{claimFarhan}}",
+                "approve"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "  pm.test(\"Status is 400\", () => pm.response.to.have.status(400));",
+                  "  pm.test(\"Message mentions 'turned-down request cannot be approved'\", () => pm.expect(pm.response.json().message).to.include(\"turned-down request cannot be approved\"));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "INVALID TRANSITION: cancel a turned-down request",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{farhanToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/claims/{{claimFarhan}}/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "claims",
+                "{{claimFarhan}}",
+                "cancel"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "  pm.test(\"Status is 400\", () => pm.response.to.have.status(400));",
+                  "  pm.test(\"Message mentions 'cannot be cancelled'\", () => pm.expect(pm.response.json().message).to.include(\"cannot be cancelled\"));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bad request id gives 400",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{donorToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/claims/123/approve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "claims",
+                "123",
+                "approve"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "  pm.test(\"Status is 400\", () => pm.response.to.have.status(400));",
+                  "  pm.test(\"Message mentions 'Invalid id'\", () => pm.expect(pm.response.json().message).to.include(\"Invalid id\"));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Canteen was told about the requests (rule 8)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{donorToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/notifications",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "        pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "        const n = pm.response.json().data.notifications;",
+                  "        pm.test(\"Has a claim_submitted notification for the test pulao\", () => {",
+                  "          pm.expect(n.some((x) => x.type === \"claim_submitted\" && x.message.includes(\"Postman Test Pulao\"))).to.be.true;",
+                  "        });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5. Pickups",
+      "item": [
+        {
+          "name": "Donor cannot assign a volunteer (wrong role)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{donorToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/pickups/assign",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "pickups",
+                "assign"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"claimRequestId\": \"{{claimAnanya}}\",\n  \"volunteerId\": \"{{kiranId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "  pm.test(\"Status is 403\", () => pm.response.to.have.status(403));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Approved request is in the admin's \"needs a volunteer\" list",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/pickups/unassigned",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "pickups",
+                "unassigned"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "        pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "        const ids = pm.response.json().data.claims.map((c) => c.id);",
+                  "        pm.test(\"Contains Ananya's request\", () => pm.expect(ids).to.include(pm.collectionVariables.get(\"claimAnanya\")));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cannot assign a turned-down request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/pickups/assign",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "pickups",
+                "assign"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"claimRequestId\": \"{{claimFarhan}}\",\n  \"volunteerId\": \"{{kiranId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "  pm.test(\"Status is 400\", () => pm.response.to.have.status(400));",
+                  "  pm.test(\"Message mentions 'Only approved requests'\", () => pm.expect(pm.response.json().message).to.include(\"Only approved requests\"));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cannot assign to someone who is not a volunteer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/pickups/assign",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "pickups",
+                "assign"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"claimRequestId\": \"{{claimAnanya}}\",\n  \"volunteerId\": \"{{ananyaId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "  pm.test(\"Status is 400\", () => pm.response.to.have.status(400));",
+                  "  pm.test(\"Message mentions 'Choose a volunteer'\", () => pm.expect(pm.response.json().message).to.include(\"Choose a volunteer\"));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Empty assign body gives field errors",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/pickups/assign",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "pickups",
+                "assign"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "  pm.test(\"Status is 400\", () => pm.response.to.have.status(400));",
+                  "  pm.test(\"Errors for both fields\", () => pm.expect(pm.response.json().data.errors).to.include.keys(\"claimRequestId\", \"volunteerId\"));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin assigns Kiran",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/pickups/assign",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "pickups",
+                "assign"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"claimRequestId\": \"{{claimAnanya}}\",\n  \"volunteerId\": \"{{kiranId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "        pm.test(\"Status is 201\", () => pm.response.to.have.status(201));",
+                  "        const p = pm.response.json().data.pickup;",
+                  "        pm.collectionVariables.set(\"pickupId\", p.id);",
+                  "        pm.test(\"Run is assigned to Kiran\", () => {",
+                  "          pm.expect(p.pickupStatus).to.eql(\"assigned\");",
+                  "          pm.expect(p.volunteerName).to.include(\"Kiran\");",
+                  "        });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Assigning the same request twice is refused",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/pickups/assign",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "pickups",
+                "assign"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"claimRequestId\": \"{{claimAnanya}}\",\n  \"volunteerId\": \"{{kiranId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "  pm.test(\"Status is 409\", () => pm.response.to.have.status(409));",
+                  "  pm.test(\"Message mentions 'already has a volunteer'\", () => pm.expect(pm.response.json().message).to.include(\"already has a volunteer\"));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Meera cannot update Kiran's run",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{meeraToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/pickups/{{pickupId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "pickups",
+                "{{pickupId}}",
+                "status"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"picked_up\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "  pm.test(\"Status is 403\", () => pm.response.to.have.status(403));",
+                  "  pm.test(\"Message mentions 'your own pickups'\", () => pm.expect(pm.response.json().message).to.include(\"your own pickups\"));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Recipient cannot update a run (wrong role)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ananyaToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/pickups/{{pickupId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "pickups",
+                "{{pickupId}}",
+                "status"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"picked_up\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "  pm.test(\"Status is 403\", () => pm.response.to.have.status(403));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "INVALID TRANSITION: assigned straight to delivered",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{kiranToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/pickups/{{pickupId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "pickups",
+                "{{pickupId}}",
+                "status"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"delivered\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "  pm.test(\"Status is 400\", () => pm.response.to.have.status(400));",
+                  "  pm.test(\"Message mentions 'cannot become delivered'\", () => pm.expect(pm.response.json().message).to.include(\"cannot become delivered\"));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Unknown status is refused",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{kiranToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/pickups/{{pickupId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "pickups",
+                "{{pickupId}}",
+                "status"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"teleported\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "  pm.test(\"Status is 400\", () => pm.response.to.have.status(400));",
+                  "  pm.test(\"Field error on status\", () => pm.expect(pm.response.json().data.errors).to.have.property(\"status\"));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Kiran collects the food",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{kiranToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/pickups/{{pickupId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "pickups",
+                "{{pickupId}}",
+                "status"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"picked_up\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "  pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "  pm.test(\"Now picked up\", () => pm.expect(pm.response.json().data.pickup.pickupStatus).to.eql(\"picked_up\"));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ananya can no longer cancel (food collected)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ananyaToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/claims/{{claimAnanya}}/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "claims",
+                "{{claimAnanya}}",
+                "cancel"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "  pm.test(\"Status is 400\", () => pm.response.to.have.status(400));",
+                  "  pm.test(\"Message mentions 'already been collected'\", () => pm.expect(pm.response.json().message).to.include(\"already been collected\"));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "INVALID TRANSITION: picked up twice",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{kiranToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/pickups/{{pickupId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "pickups",
+                "{{pickupId}}",
+                "status"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"picked_up\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "  pm.test(\"Status is 400\", () => pm.response.to.have.status(400));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Kiran delivers",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{kiranToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/pickups/{{pickupId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "pickups",
+                "{{pickupId}}",
+                "status"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"delivered\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "        pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "        const p = pm.response.json().data.pickup;",
+                  "        pm.test(\"Delivered with a time\", () => {",
+                  "          pm.expect(p.pickupStatus).to.eql(\"delivered\");",
+                  "          pm.expect(p.deliveredAt).to.be.a(\"string\");",
+                  "        });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "INVALID TRANSITION: delivered to cancelled",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{kiranToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/pickups/{{pickupId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "pickups",
+                "{{pickupId}}",
+                "status"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"cancelled\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "  pm.test(\"Status is 400\", () => pm.response.to.have.status(400));",
+                  "  pm.test(\"Message mentions 'cannot become cancelled'\", () => pm.expect(pm.response.json().message).to.include(\"cannot become cancelled\"));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listing stays open (4 boxes still free)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{donorToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/foods/{{listingId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "foods",
+                "{{listingId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "  pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "  pm.test(\"Not completed while portions are left\", () => pm.expect(pm.response.json().data.listing.status).to.eql(\"available\"));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ananya was told it was delivered (rule 8)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ananyaToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/notifications",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "        pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "        const n = pm.response.json().data.notifications;",
+                  "        pm.test(\"Has approved, volunteer_assigned and delivered notifications\", () => {",
+                  "          const about = n.filter((x) => x.message.includes(\"Postman Test Pulao\")).map((x) => x.type);",
+                  "          pm.expect(about).to.include.members([\"claim_approved\", \"volunteer_assigned\", \"delivered\"]);",
+                  "        });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ananya's receipt shows the delivery",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ananyaToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/claims/mine",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "claims",
+                "mine"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "        pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "        const c = pm.response.json().data.claims.find((x) => x.id === pm.collectionVariables.get(\"claimAnanya\"));",
+                  "        pm.test(\"Pickup summary says delivered by Kiran\", () => {",
+                  "          pm.expect(c.pickup.pickupStatus).to.eql(\"delivered\");",
+                  "          pm.expect(c.pickup.volunteerName).to.include(\"Kiran\");",
+                  "        });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "6. Admin, notifications, dashboards",
+      "item": [
+        {
+          "name": "Pending accounts include Rohit",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users?status=pending",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "pending"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "        pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "        const users = pm.response.json().data.users;",
+                  "        pm.test(\"Rohit is waiting\", () => pm.expect(users.map((u) => u.id)).to.include(pm.collectionVariables.get(\"rohitId\")));",
+                  "        pm.test(\"No admin is ever listed\", () => pm.expect(users.every((u) => u.role !== \"admin\")).to.be.true);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bad filter value is refused",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users?status=sleeping",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "sleeping"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "  pm.test(\"Status is 400\", () => pm.response.to.have.status(400));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin accounts cannot be verified",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/{{adminId}}/verify",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "{{adminId}}",
+                "verify"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"rejected\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "  pm.test(\"Status is 400\", () => pm.response.to.have.status(400));",
+                  "  pm.test(\"Message mentions 'Admin accounts'\", () => pm.expect(pm.response.json().message).to.include(\"Admin accounts\"));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verify needs approved or rejected",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/{{rohitId}}/verify",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "{{rohitId}}",
+                "verify"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"maybe\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "  pm.test(\"Status is 400\", () => pm.response.to.have.status(400));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Donor cannot verify accounts (wrong role)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{donorToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/{{rohitId}}/verify",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "{{rohitId}}",
+                "verify"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"approved\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "  pm.test(\"Status is 403\", () => pm.response.to.have.status(403));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ananya cannot mark someone else's notification",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ananyaToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/000000000000000000000000/read",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications",
+                "000000000000000000000000",
+                "read"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "  pm.test(\"Status is 404\", () => pm.response.to.have.status(404));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Mark all read",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ananyaToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/read-all",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications",
+                "read-all"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "  pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Unread count is now 0",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ananyaToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/notifications",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "  pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "  pm.test(\"unreadCount is 0\", () => pm.expect(pm.response.json().data.unreadCount).to.eql(0));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Dashboard for the admin",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/dashboard",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dashboard"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "  pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "  pm.test(\"success is true\", () => pm.expect(pm.response.json().success).to.eql(true));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Dashboard for the donor",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{donorToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/dashboard",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dashboard"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "  pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "  pm.test(\"success is true\", () => pm.expect(pm.response.json().success).to.eql(true));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Dashboard for the recipient",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ananyaToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/dashboard",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dashboard"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "  pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "  pm.test(\"success is true\", () => pm.expect(pm.response.json().success).to.eql(true));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Dashboard for the volunteer",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{kiranToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/dashboard",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dashboard"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "  pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "  pm.test(\"success is true\", () => pm.expect(pm.response.json().success).to.eql(true));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Activity feed for the admin",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/activity",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "activity"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "  pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "  pm.test(\"Mentions the test delivery\", () => pm.expect(JSON.stringify(pm.response.json().data)).to.include(\"Postman Test Pulao\"));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Pending account has no dashboard",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{rohitToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/dashboard",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dashboard"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "  pm.test(\"Status is 403\", () => pm.response.to.have.status(403));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
