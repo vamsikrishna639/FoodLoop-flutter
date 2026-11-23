@@ -86,6 +86,15 @@ polish.
   practice it no longer stands out.
 - To fix it, the board needs its own treatment in dark mode, such as a lighter
   slate, a stronger frame, or chalk dust.
+- **Two options, waiting for a choice** (not applied to the code):
+  - **A** (`docs/screenshots/f2-option-a.png`): keep the board colour; a
+    lighter wooden frame (`#6B5236`) and a 1.5px chalk edge (`#6A736E`, 3.22:1
+    against the page) on the board, sidebar, rail and login/onboarding panel.
+    Text on the board is unchanged (chalk 12.11, chalkSoft 5.90).
+  - **B** (`docs/screenshots/f2-option-b.png`): in chalkboard mode only, the
+    board becomes a green slate `#2F3B34` (1.35:1 against the page). Text on
+    the board: chalk 9.56, chalkSoft 4.66 (the lowest, still at least 4.5),
+    turmeric 6.47.
 
 **F3. The same event shows different times in Alerts and in the Activity rail.**
 - "Farhan Sheikh requested 5 boxes of Chicken Biryani" reads "59 min ago" in
