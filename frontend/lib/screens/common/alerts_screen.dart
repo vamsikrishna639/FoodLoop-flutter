@@ -1,16 +1,16 @@
-// Alerts: the user's notifications, newest first, grouped by day like the
-// pages of a duplicate receipt book.
+// Alerts: the user's notifications, newest first, grouped by day. Each one
+// is a small printed slip pushed onto a docket spike, like orders at the
+// canteen till.
 //
 //   Today
-//   * APPROVED · NEW                              12 min ago
-//     Your request for 8 boxes of Chicken Biryani was approved.
-//   ------------------------------------------------------------
-//     PICKUP                                      25 min ago
-//     Kiran Kumar will collect your Chicken Biryani.
+//   |-o [ APPROVED · UNREAD                        12m ago ]
+//   |   [ Your request for 8 boxes of Chicken Biryani ...  ]
+//   |-o [ PICKUP                                   25m ago ]
+//   |   [ Kiran Kumar will collect your Chicken Biryani.   ]
 //
-// An unread line has a chilli dot, the word NEW and a bolder message, so
-// "unread" never depends on colour alone. Tapping a line marks it read and
-// opens the page it is about (see [alertTarget]).
+// An unread slip is fresh white paper with the word UNREAD and a bolder
+// message, so "unread" never depends on colour alone. Tapping a slip marks
+// it read and opens the page it is about (see [alertTarget]).
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
@@ -37,8 +37,10 @@ import '../../widgets/slip_snackbar.dart';
   return switch ((type, role)) {
     ('claim_submitted', UserRole.donor) => (path: '/home', page: 'Board'),
     ('delivered', UserRole.donor) => (path: '/home', page: 'Board'),
-    ('claim_approved' || 'claim_rejected' || 'volunteer_assigned' || 'delivered', UserRole.recipient) =>
-      (path: '/requests', page: 'My requests'),
+    ('claim_approved' || 'claim_rejected' || 'volunteer_assigned' || 'delivered', UserRole.recipient) => (
+      path: '/requests',
+      page: 'My requests',
+    ),
     ('volunteer_assigned', UserRole.volunteer) => (path: '/home', page: 'Pickups'),
     ('account_approved', UserRole.recipient) => (path: '/home', page: 'Counter'),
     ('account_approved', UserRole.donor) => (path: '/home', page: 'Board'),
@@ -111,16 +113,18 @@ class _AlertsScreenState extends State<AlertsScreen> {
         children: [
           for (final g in groups.entries) ...[
             Padding(
-              padding: const EdgeInsets.only(top: FlSpace.lg, bottom: FlSpace.xs),
+              padding: const EdgeInsets.only(top: FlSpace.lg, bottom: FlSpace.sm),
               child: Semantics(header: true, child: Text(g.key, style: context.text.titleMedium)),
             ),
-            for (final a in g.value)
-              _AlertLine(
-                key: ValueKey(a.id),
-                alert: a,
-                target: alertTarget(a.type, role),
-                onOpen: _open,
+            _Spike(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (final a in g.value)
+                    _AlertLine(key: ValueKey(a.id), alert: a, target: alertTarget(a.type, role), onOpen: _open),
+                ],
               ),
+            ),
           ],
         ],
       );
@@ -133,8 +137,8 @@ class _AlertsScreenState extends State<AlertsScreen> {
       lede: items == null || items.isEmpty
           ? null
           : unread == 0
-              ? 'All read. New ones are printed here as they happen.'
-              : '$unread unread. Tap a line to open it.',
+          ? 'All read. New ones are printed here as they happen.'
+          : '$unread unread. Tap a line to open it.',
       maxWidth: 680,
       actions: [
         if (unread > 0)
@@ -168,85 +172,122 @@ class _AlertLine extends StatelessWidget {
     final tappable = unread || target != null;
     final action = target != null ? '. Open ${target!.page}' : (unread ? '. Mark as read' : '');
 
-    return Pressable(
-      onTap: tappable ? () => onOpen(a, target) : null,
-      focusRadius: FlRadius.stamp,
-      semanticLabel: '${unread ? 'Unread. ' : ''}${a.message} ${Fmt.ago(a.createdAt)}$action',
-      builder: (context, hovered) => Container(
-        constraints: const BoxConstraints(minHeight: 48),
-        padding: const EdgeInsets.symmetric(vertical: FlSpace.md, horizontal: FlSpace.xs),
-        decoration: BoxDecoration(
-          color: hovered ? fl.surfaceSunken : fl.surfaceSunken.withValues(alpha: 0),
-          border: Border(bottom: BorderSide(color: fl.line)),
-        ),
-        child: ExcludeSemantics(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // The unread dot fades out when the line is read (120ms).
-              SizedBox(
-                width: 20,
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: AnimatedOpacity(
-                    opacity: unread ? 1 : 0,
-                    duration: FlMotion.fade(context, FlMotion.fast),
-                    curve: FlMotion.easeOut,
-                    child: Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(color: fl.chilli, shape: BoxShape.circle),
-                    ),
+    // Each alert is a small printed slip pushed onto the docket spike that
+    // runs down the left (see _Spike). Unread slips are fresh white paper
+    // with the word UNREAD; read ones turn to the older, sunken paper.
+    return Padding(
+      padding: const EdgeInsets.only(bottom: FlSpace.sm),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // The hole where the slip sits on the spike.
+          Padding(
+            padding: const EdgeInsets.only(top: FlSpace.lg),
+            child: Container(
+              width: 12,
+              height: 12,
+              decoration: BoxDecoration(
+                color: fl.paper,
+                shape: BoxShape.circle,
+                border: Border.all(color: fl.controlBorder, width: 1.5),
+              ),
+            ),
+          ),
+          const SizedBox(width: FlSpace.sm),
+          Expanded(
+            child: Pressable(
+              onTap: tappable ? () => onOpen(a, target) : null,
+              focusRadius: FlRadius.sharp,
+              semanticLabel: '${unread ? 'Unread. ' : ''}${a.message} ${Fmt.ago(a.createdAt)}$action',
+              // Read/unread only changes the paper colour, so it is a fade (120ms).
+              builder: (context, hovered) => AnimatedContainer(
+                duration: FlMotion.fade(context, FlMotion.fast),
+                curve: FlMotion.easeOut,
+                constraints: const BoxConstraints(minHeight: 48),
+                padding: const EdgeInsets.fromLTRB(FlSpace.md, FlSpace.md, FlSpace.md, FlSpace.md),
+                decoration: BoxDecoration(
+                  color: unread ? fl.surface : fl.surfaceSunken,
+                  borderRadius: BorderRadius.circular(FlRadius.sharp),
+                  border: Border.all(color: hovered ? fl.controlBorder : fl.line),
+                ),
+                child: ExcludeSemantics(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text.rich(
+                              TextSpan(
+                                children: [
+                                  TextSpan(text: a.word),
+                                  if (unread)
+                                    TextSpan(
+                                      text: '  ·  UNREAD',
+                                      style: TextStyle(color: fl.chilliDeep),
+                                    ),
+                                ],
+                              ),
+                              style: fl.monoSmall.copyWith(color: fl.ink, fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                          const SizedBox(width: FlSpace.sm),
+                          // The day is the group heading, so lines inside it
+                          // print only the time.
+                          Text(Fmt.agoInDay(a.createdAt), style: fl.monoSmall),
+                        ],
+                      ),
+                      const SizedBox(height: FlSpace.xs),
+                      Text(
+                        a.message,
+                        style: context.text.bodyLarge?.copyWith(
+                          fontWeight: unread ? FontWeight.w600 : FontWeight.w400,
+                          color: unread ? fl.ink : fl.inkSoft,
+                        ),
+                      ),
+                      // The page it opens, printed below the message so the
+                      // line reads as a link without relying on colour.
+                      if (target != null) ...[
+                        const SizedBox(height: FlSpace.xs),
+                        Row(
+                          children: [
+                            Text(target!.page.toUpperCase(), style: fl.monoSmall.copyWith(color: fl.inkSoft)),
+                            const SizedBox(width: FlSpace.xxs),
+                            Icon(Icons.arrow_forward, size: 14, color: fl.inkSoft),
+                          ],
+                        ),
+                      ],
+                    ],
                   ),
                 ),
               ),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text.rich(
-                            TextSpan(children: [
-                              TextSpan(text: a.word),
-                              if (unread)
-                                TextSpan(text: '  ·  NEW', style: TextStyle(color: fl.chilliDeep)),
-                            ]),
-                            style: fl.monoSmall.copyWith(color: fl.ink, fontWeight: FontWeight.w700),
-                          ),
-                        ),
-                        const SizedBox(width: FlSpace.sm),
-                        Text(Fmt.ago(a.createdAt), style: fl.monoSmall),
-                      ],
-                    ),
-                    const SizedBox(height: FlSpace.xs),
-                    Text(
-                      a.message,
-                      style: context.text.bodyLarge?.copyWith(
-                        fontWeight: unread ? FontWeight.w600 : FontWeight.w400,
-                        color: unread ? fl.ink : fl.inkSoft,
-                      ),
-                    ),
-                    // The page it opens, printed below the message so the
-                    // line reads as a link without relying on colour.
-                    if (target != null) ...[
-                      const SizedBox(height: FlSpace.xs),
-                      Row(
-                        children: [
-                          Text(target!.page, style: fl.monoSmall.copyWith(color: fl.inkSoft)),
-                          const SizedBox(width: FlSpace.xxs),
-                          Icon(Icons.arrow_forward, size: 14, color: fl.inkSoft),
-                        ],
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
+    );
+  }
+}
+
+/// The docket spike: one ink rule down the left, which the slips' holes sit
+/// on, like orders pushed onto a spike at the canteen till.
+class _Spike extends StatelessWidget {
+  const _Spike({required this.child});
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        Positioned(
+          left: 5,
+          top: FlSpace.lg,
+          bottom: FlSpace.lg,
+          width: 2,
+          child: ColoredBox(color: context.fl.controlBorder),
+        ),
+        child,
+      ],
     );
   }
 }

@@ -22,6 +22,7 @@ import '../../core/theme/tokens.dart';
 import '../../models/claim_request.dart';
 import '../../providers/claims_provider.dart';
 import '../../providers/listings_provider.dart';
+import '../../widgets/docket_slip.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/fade_in.dart';
 import '../../widgets/fl_button.dart';
@@ -175,15 +176,25 @@ class _RequestSlipState extends State<RequestSlip> {
     final closed = !listing.isOpen;
     final who = [if (c.recipientOrg.isNotEmpty) c.recipientOrg, Fmt.ago(c.createdAt)].join(' · ');
 
+    // Other pending requests for the same token. When together they ask for
+    // more than is left, each slip says so: only some can be approved.
+    final rivals = context
+        .watch<ClaimsProvider>()
+        .items
+        ?.where((o) => o.id != c.id && o.isPending && o.listing.id == listing.id)
+        .toList();
+    final contested = c.isPending &&
+        !short &&
+        !closed &&
+        rivals != null &&
+        rivals.isNotEmpty &&
+        rivals.fold<int>(c.requestedQuantity, (sum, o) => sum + o.requestedQuantity) > listing.available;
+
     return Semantics(
       container: true,
-      child: Container(
-        decoration: BoxDecoration(
-          color: fl.surface,
-          borderRadius: BorderRadius.circular(FlRadius.sharp),
-          border: Border.all(color: fl.line),
-        ),
-        padding: const EdgeInsets.all(FlSpace.lg),
+      child: DocketSlip(
+        // How much they asked for, printed big on the stub.
+        stub: DocketFigure(value: '${c.requestedQuantity}', caption: listing.unit),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -213,15 +224,11 @@ class _RequestSlipState extends State<RequestSlip> {
               ],
             ),
             const SizedBox(height: FlSpace.md),
-            // What they asked for: the amount in mono, like a token stub.
-            Text.rich(
-              TextSpan(children: [
-                TextSpan(
-                  text: Fmt.quantity(c.requestedQuantity, listing.unit).toUpperCase(),
-                  style: fl.monoLarge,
-                ),
-                TextSpan(text: '   ${listing.title}', style: context.text.titleMedium),
-              ]),
+            // What they asked for; the amount is on the stub.
+            Text(
+              listing.title,
+              style: context.text.titleMedium,
+              semanticsLabel: '${Fmt.quantity(c.requestedQuantity, listing.unit)} of ${listing.title}',
             ),
             const SizedBox(height: FlSpace.xxs),
             Text(
@@ -251,7 +258,11 @@ class _RequestSlipState extends State<RequestSlip> {
                           ? 'Pickup has closed, so this can only be turned down.'
                           : short
                               ? 'Only ${Fmt.quantity(listing.available, listing.unit)} left, so this cannot be approved in full.'
-                              : null,
+                              : contested
+                                  ? '${rivals.length == 1 ? 'Another request asks' : '${rivals.length} other requests ask'} '
+                                      'for this token too. With ${Fmt.quantity(listing.available, listing.unit)} left, '
+                                      'not all of them can be approved.'
+                                  : null,
                       onApprove: _approve,
                       onReject: _reject,
                     )

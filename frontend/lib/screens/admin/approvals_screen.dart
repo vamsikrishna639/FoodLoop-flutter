@@ -19,6 +19,7 @@ import '../../core/theme/tokens.dart';
 import '../../models/user.dart';
 import '../../providers/admin_provider.dart';
 import '../../providers/dashboard_provider.dart';
+import '../../widgets/docket_slip.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/fade_in.dart';
 import '../../widgets/filter_tag.dart';
@@ -122,13 +123,16 @@ class _Register extends StatelessWidget {
   Widget build(BuildContext context) {
     final fl = context.fl;
     Widget head(String text) => Padding(
-          padding: const EdgeInsets.symmetric(horizontal: FlSpace.md, vertical: FlSpace.sm),
-          child: Text(text, style: fl.monoSmall.copyWith(color: fl.ink, fontWeight: FontWeight.w700)),
-        );
+      padding: const EdgeInsets.symmetric(horizontal: FlSpace.md, vertical: FlSpace.sm),
+      child: Text(
+        text,
+        style: fl.monoSmall.copyWith(color: fl.ink, fontWeight: FontWeight.w700),
+      ),
+    );
     Widget cell(Widget child) => Padding(
-          padding: const EdgeInsets.symmetric(horizontal: FlSpace.md, vertical: FlSpace.md),
-          child: child,
-        );
+      padding: const EdgeInsets.symmetric(horizontal: FlSpace.md, vertical: FlSpace.md),
+      child: child,
+    );
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -156,21 +160,25 @@ class _Register extends StatelessWidget {
               key: ValueKey(u.id),
               children: [
                 cell(_NameBlock(user: u)),
-                cell(Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(u.email, style: fl.mono, maxLines: 1, overflow: TextOverflow.ellipsis),
-                    Text(u.phone, style: fl.mono.copyWith(color: fl.inkSoft)),
-                  ],
-                )),
-                cell(Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _RoleStamp(role: u.role),
-                    const SizedBox(height: FlSpace.sm),
-                    Text(u.createdAt == null ? '--' : Fmt.day(u.createdAt!), style: fl.monoSmall),
-                  ],
-                )),
+                cell(
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(u.email, style: fl.mono, maxLines: 1, overflow: TextOverflow.ellipsis),
+                      Text(Fmt.phone(u.phone), style: fl.mono.copyWith(color: fl.inkSoft)),
+                    ],
+                  ),
+                ),
+                cell(
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _RoleStamp(role: u.role),
+                      const SizedBox(height: FlSpace.sm),
+                      Text(u.createdAt == null ? '--' : Fmt.day(u.createdAt!), style: fl.monoSmall),
+                    ],
+                  ),
+                ),
                 cell(_Decision(user: u, compact: true)),
               ],
             ),
@@ -192,35 +200,37 @@ class _Slips extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         for (final u in users)
-          Container(
+          Padding(
             key: ValueKey(u.id),
-            margin: const EdgeInsets.only(bottom: FlSpace.md),
-            padding: const EdgeInsets.all(FlSpace.lg),
-            decoration: BoxDecoration(
-              color: fl.surface,
-              borderRadius: BorderRadius.circular(FlRadius.sharp),
-              border: Border.all(color: fl.line),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(child: _NameBlock(user: u)),
-                    const SizedBox(width: FlSpace.md),
-                    Padding(padding: const EdgeInsets.only(top: FlSpace.xs), child: _RoleStamp(role: u.role)),
-                  ],
-                ),
-                const SizedBox(height: FlSpace.md),
-                Text(u.email, style: fl.mono),
-                Text(
-                  '${u.phone}${u.createdAt == null ? '' : ' · joined ${Fmt.day(u.createdAt!)}'}',
-                  style: fl.mono.copyWith(color: fl.inkSoft),
-                ),
-                const SizedBox(height: FlSpace.md),
-                _Decision(user: u),
-              ],
+            padding: const EdgeInsets.only(bottom: FlSpace.md),
+            child: DocketSlip(
+              // The stub carries the person's initials, like a member card.
+              stub: DocketFigure(value: u.initials, caption: 'new'),
+              stubWidth: 64,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(child: _NameBlock(user: u)),
+                      const SizedBox(width: FlSpace.md),
+                      Padding(
+                        padding: const EdgeInsets.only(top: FlSpace.xs),
+                        child: _RoleStamp(role: u.role),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: FlSpace.md),
+                  Text(u.email, style: fl.mono),
+                  Text(
+                    '${Fmt.phone(u.phone)}${u.createdAt == null ? '' : ' · joined ${Fmt.day(u.createdAt!)}'}',
+                    style: fl.mono.copyWith(color: fl.inkSoft),
+                  ),
+                  const SizedBox(height: FlSpace.md),
+                  _Decision(user: u),
+                ],
+              ),
             ),
           ),
       ],
@@ -311,7 +321,10 @@ class _DecisionState extends State<_Decision> {
       final stamp = StatusStamp(u.isApproved ? StampKind.approved : StampKind.rejected);
       // Only a decision made just now fades in; older ones are simply printed.
       final justNow = context.read<AdminProvider>().decidedHere.contains(u.id);
-      return Align(alignment: Alignment.centerLeft, child: justNow ? FadeIn(child: stamp) : stamp);
+      return Align(
+        alignment: Alignment.centerLeft,
+        child: justNow ? FadeIn(child: stamp) : stamp,
+      );
     }
     final idle = _busyApproving == null;
     return Wrap(

@@ -278,7 +278,9 @@ class _RoleSlip extends StatelessWidget {
         child: CustomPaint(
           painter: TokenSlipPainter(
             stubHeight: _stub,
-            lineColor: selected ? fl.ink : (hovered ? fl.controlBorder : fl.perforation),
+            // A slip is a control, so its edge is controlBorder (3.36:1), not
+            // the decorative perforation colour; hover darkens it to ink.
+            lineColor: selected || hovered ? fl.ink : fl.controlBorder,
             shadowColor: fl.ink.withValues(alpha: 0.10),
             lifted: hovered && !selected,
           ),

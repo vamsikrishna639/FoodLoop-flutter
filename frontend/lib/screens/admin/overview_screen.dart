@@ -16,11 +16,13 @@ import '../../models/dashboard.dart';
 import '../../providers/admin_provider.dart';
 import '../../providers/dashboard_provider.dart';
 import '../../widgets/deliveries_chart.dart';
+import '../../widgets/docket_slip.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/fade_in.dart';
 import '../../widgets/fl_button.dart';
 import '../../widgets/impact_number.dart';
 import '../../widgets/page_frame.dart';
+import '../../widgets/paper_shapes.dart';
 import '../../widgets/receipt_timeline.dart';
 import '../../widgets/skeleton_token.dart';
 import '../../widgets/slip_snackbar.dart';
@@ -51,7 +53,10 @@ class _OverviewScreenState extends State<OverviewScreen> {
     final stats = dash.stats;
 
     if (stats == null && dash.error != null) {
-      return PageFrame(title: 'Overview', children: [EmptyState.error(message: dash.error!, onRetry: dash.load)]);
+      return PageFrame(
+        title: 'Overview',
+        children: [EmptyState.error(message: dash.error!, onRetry: dash.load)],
+      );
     }
 
     return PageFrame(
@@ -59,33 +64,37 @@ class _OverviewScreenState extends State<OverviewScreen> {
       lede: 'What reached people this week, and the requests that still need someone to carry them.',
       maxWidth: 1040,
       children: [
-        _ImpactBlock(stats: stats),
-        const SizedBox(height: FlSpace.xxxl),
-        LayoutBuilder(builder: (context, box) {
-          final queue = const _VolunteerQueue();
-          final tally = _RightNow(stats: stats);
-          if (box.maxWidth >= 860) {
-            return Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+        // One big printed report with the smaller "right now" receipt beside
+        // it, both above the fold; the admin's work queue follows.
+        LayoutBuilder(
+          builder: (context, box) {
+            final impact = _ImpactBlock(stats: stats);
+            final tally = _RightNow(stats: stats);
+            if (box.maxWidth >= 640) {
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(flex: 3, child: impact),
+                  const SizedBox(width: FlSpace.xl),
+                  Expanded(flex: 2, child: tally),
+                ],
+              );
+            }
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Expanded(flex: 3, child: queue),
-                const SizedBox(width: FlSpace.xxl),
-                Expanded(flex: 2, child: Padding(padding: const EdgeInsets.only(top: FlSpace.xs), child: tally)),
+                impact,
+                const SizedBox(height: FlSpace.xxl),
+                Align(
+                  alignment: Alignment.topLeft,
+                  child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 420), child: tally),
+                ),
               ],
             );
-          }
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              queue,
-              const SizedBox(height: FlSpace.xxl),
-              Align(
-                alignment: Alignment.topLeft,
-                child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 420), child: tally),
-              ),
-            ],
-          );
-        }),
+          },
+        ),
+        const SizedBox(height: FlSpace.xxxl),
+        const _VolunteerQueue(),
       ],
     );
   }
@@ -123,14 +132,35 @@ class _ImpactBlock extends StatelessWidget {
       ],
     );
 
-    return Container(
-      decoration: BoxDecoration(
-        color: fl.surface,
-        borderRadius: BorderRadius.circular(FlRadius.sharp),
-        border: Border.all(color: fl.line),
+    // Printed like the canteen's end-of-week report: torn top and bottom
+    // edges, a mono header line, then the figure and the chart.
+    return CustomPaint(
+      foregroundPainter: ReceiptOutlinePainter(fl.line),
+      child: ClipPath(
+        clipper: const ReceiptClipper(),
+        child: ColoredBox(
+          color: fl.surface,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(FlSpace.xl, FlSpace.xl, FlSpace.xl, FlSpace.xxl),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text('WEEKLY REPORT · PRINTED ${Fmt.time(DateTime.now())}', style: fl.monoSmall),
+                const SizedBox(height: FlSpace.sm),
+                DottedLine(color: fl.controlBorder, dot: 4, gap: 3, height: 1),
+                const SizedBox(height: FlSpace.lg),
+                _layout(big, sentence, chart),
+              ],
+            ),
+          ),
+        ),
       ),
-      padding: const EdgeInsets.all(FlSpace.xl),
-      child: LayoutBuilder(builder: (context, box) {
+    );
+  }
+
+  Widget _layout(Widget big, Widget sentence, Widget chart) {
+    return LayoutBuilder(
+      builder: (context, box) {
         // Very wide: number and sentence in a column beside the chart.
         if (box.maxWidth >= 860) {
           return Row(
@@ -140,7 +170,11 @@ class _ImpactBlock extends StatelessWidget {
                 width: 280,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [big, const SizedBox(height: FlSpace.lg), sentence],
+                  children: [
+                    big,
+                    const SizedBox(height: FlSpace.lg),
+                    sentence,
+                  ],
                 ),
               ),
               const SizedBox(width: FlSpace.xxl),
@@ -157,18 +191,31 @@ class _ImpactBlock extends StatelessWidget {
                 children: [
                   big,
                   const SizedBox(width: FlSpace.xxl),
-                  Expanded(child: Padding(padding: const EdgeInsets.only(bottom: FlSpace.xs), child: sentence)),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: FlSpace.xs),
+                      child: sentence,
+                    ),
+                  ),
                 ],
               )
             : Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: [big, const SizedBox(height: FlSpace.lg), sentence],
+                children: [
+                  big,
+                  const SizedBox(height: FlSpace.lg),
+                  sentence,
+                ],
               );
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [head, const SizedBox(height: FlSpace.xxl), chart],
+          children: [
+            head,
+            const SizedBox(height: FlSpace.xxl),
+            chart,
+          ],
         );
-      }),
+      },
     );
   }
 }
@@ -248,16 +295,13 @@ class _AssignSlip extends StatelessWidget {
     final c = claim;
     final l = c.listing;
     final closed = l.pickupDeadline.isBefore(DateTime.now());
-    final who = [if (c.recipientOrg.isNotEmpty) c.recipientOrg, if (c.decidedAt != null) 'approved ${Fmt.ago(c.decidedAt!)}']
-        .join(' · ');
+    final who = [
+      if (c.recipientOrg.isNotEmpty) c.recipientOrg,
+      if (c.decidedAt != null) 'approved ${Fmt.ago(c.decidedAt!)}',
+    ].join(' · ');
 
-    return Container(
-      decoration: BoxDecoration(
-        color: fl.surface,
-        borderRadius: BorderRadius.circular(FlRadius.sharp),
-        border: Border.all(color: fl.line),
-      ),
-      padding: const EdgeInsets.all(FlSpace.lg),
+    return DocketSlip(
+      stub: DocketFigure(value: '${c.requestedQuantity}', caption: l.unit),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -284,17 +328,22 @@ class _AssignSlip extends StatelessWidget {
             ],
           ),
           const SizedBox(height: FlSpace.md),
-          Text.rich(TextSpan(children: [
-            TextSpan(text: Fmt.quantity(c.requestedQuantity, l.unit).toUpperCase(), style: fl.monoLarge),
-            TextSpan(text: '   ${l.title}', style: context.text.titleMedium),
-          ])),
+          Text(
+            l.title,
+            style: context.text.titleMedium,
+            semanticsLabel: '${Fmt.quantity(c.requestedQuantity, l.unit)} of ${l.title}',
+          ),
           const SizedBox(height: FlSpace.xxs),
-          Text('#${l.tokenNumber} · pickup by ${Fmt.time(l.pickupDeadline)} · ${l.donorName}'.toUpperCase(),
-              style: fl.monoSmall),
+          Text(
+            '#${l.tokenNumber} · pickup by ${Fmt.time(l.pickupDeadline)} · ${l.donorName}'.toUpperCase(),
+            style: fl.monoSmall,
+          ),
           const SizedBox(height: FlSpace.md),
           if (assignedTo != null)
-            Text('$assignedTo will collect it. They have been told.',
-                style: context.text.bodyMedium?.copyWith(color: fl.inkSoft))
+            Text(
+              '$assignedTo will collect it. They have been told.',
+              style: context.text.bodyMedium?.copyWith(color: fl.inkSoft),
+            )
           else if (closed)
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -302,8 +351,10 @@ class _AssignSlip extends StatelessWidget {
                 Icon(Icons.info_outline, size: 18, color: fl.turmericDeep, semanticLabel: 'Note'),
                 const SizedBox(width: FlSpace.sm),
                 Expanded(
-                  child: Text('Pickup time has passed, so no run can be assigned.',
-                      style: context.text.bodyMedium?.copyWith(color: fl.turmericDeep)),
+                  child: Text(
+                    'Pickup time has passed, so no run can be assigned.',
+                    style: context.text.bodyMedium?.copyWith(color: fl.turmericDeep),
+                  ),
                 ),
               ],
             )

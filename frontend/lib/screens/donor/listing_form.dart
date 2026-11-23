@@ -15,6 +15,8 @@ import '../../core/theme/tokens.dart';
 import '../../models/food_listing.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/listings_provider.dart';
+import '../../widgets/chalkboard.dart';
+import '../../widgets/paper_shapes.dart';
 import '../../widgets/filter_tag.dart';
 import '../../widgets/fl_button.dart';
 import '../../widgets/pressable.dart';
@@ -245,9 +247,12 @@ class _ListingFormState extends State<ListingForm> {
                 ),
               ],
             ),
-            const SizedBox(height: FlSpace.xl),
+            const SizedBox(height: FlSpace.lg),
             if (_formError != null) FormNotice(message: _formError!),
 
+            // The form is written like a kitchen docket: three numbered
+            // parts, then a preview of the line as it will read on the board.
+            const _DocketPart(1, 'What'),
             LabeledField(
               label: 'What is it?',
               child: TextFormField(
@@ -256,7 +261,10 @@ class _ListingFormState extends State<ListingForm> {
                 textInputAction: TextInputAction.next,
                 maxLength: 80,
                 decoration: const InputDecoration(hintText: 'e.g. Veg Pulao with Raita', counterText: ''),
-                onChanged: (_) => _clearServer('title'),
+                onChanged: (_) {
+                  _clearServer('title');
+                  setState(() {}); // the board preview follows the name
+                },
                 validator: (v) {
                   if (_server('title') != null) return _server('title');
                   final t = (v ?? '').trim();
@@ -280,7 +288,19 @@ class _ListingFormState extends State<ListingForm> {
               ],
             ),
             const SizedBox(height: FlSpace.lg),
+            LabeledField(
+              label: 'Allergens',
+              optional: true,
+              child: TextFormField(
+                controller: _allergens,
+                maxLength: 300,
+                decoration: const InputDecoration(hintText: 'e.g. Contains nuts and dairy', counterText: ''),
+                onChanged: (_) => _clearServer('allergenNotes'),
+                validator: (_) => _server('allergenNotes'),
+              ),
+            ),
 
+            const _DocketPart(2, 'How much'),
             // Quantity and unit side by side.
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -295,8 +315,12 @@ class _ListingFormState extends State<ListingForm> {
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                       textInputAction: TextInputAction.next,
                       style: fl.mono.copyWith(fontWeight: FontWeight.w700),
-                      decoration: const InputDecoration(hintText: '20'),
-                      onChanged: (_) => _clearServer('quantity'),
+                      // "e.g." so the hint can never pass for a typed value.
+                      decoration: const InputDecoration(hintText: 'e.g. 20'),
+                      onChanged: (_) {
+                        _clearServer('quantity');
+                        setState(() {}); // the board preview follows the count
+                      },
                       validator: (v) {
                         if (_server('quantity') != null) return _server('quantity');
                         final n = int.tryParse((v ?? '').trim());
@@ -335,6 +359,7 @@ class _ListingFormState extends State<ListingForm> {
                 ),
               ),
 
+            const _DocketPart(3, 'Where and when'),
             LabeledField(
               label: 'Collect from',
               child: TextFormField(
@@ -402,17 +427,6 @@ class _ListingFormState extends State<ListingForm> {
             const SizedBox(height: FlSpace.lg),
 
             LabeledField(
-              label: 'Allergens',
-              optional: true,
-              child: TextFormField(
-                controller: _allergens,
-                maxLength: 300,
-                decoration: const InputDecoration(hintText: 'e.g. Contains nuts and dairy', counterText: ''),
-                onChanged: (_) => _clearServer('allergenNotes'),
-                validator: (_) => _server('allergenNotes'),
-              ),
-            ),
-            LabeledField(
               label: 'Notes',
               optional: true,
               child: TextFormField(
@@ -444,10 +458,18 @@ class _ListingFormState extends State<ListingForm> {
               ),
             ),
             const SizedBox(height: FlSpace.sm),
+            _BoardPreview(
+              title: _title.text.trim(),
+              quantity: int.tryParse(_quantity.text.trim()),
+              unit: _unit,
+              deadline: _deadline,
+            ),
+            const SizedBox(height: FlSpace.xl),
 
             Wrap(
-              spacing: FlSpace.md,
+              spacing: FlSpace.xl,
               runSpacing: FlSpace.md,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 FlButton(
                   label: _editing ? 'Save changes' : 'Print token',
@@ -464,6 +486,75 @@ class _ListingFormState extends State<ListingForm> {
               ],
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A numbered part of the docket: "02  HOW MUCH ...........".
+class _DocketPart extends StatelessWidget {
+  const _DocketPart(this.number, this.label);
+  final int number;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final fl = context.fl;
+    return Padding(
+      padding: EdgeInsets.only(top: number == 1 ? 0 : FlSpace.md, bottom: FlSpace.lg),
+      child: Semantics(
+        header: true,
+        label: 'Part $number: $label',
+        child: ExcludeSemantics(
+          child: Row(
+            children: [
+              Text(number.toString().padLeft(2, '0'),
+                  style: fl.monoSmall.copyWith(color: fl.ink, fontWeight: FontWeight.w700)),
+              const SizedBox(width: FlSpace.sm),
+              Text(label.toUpperCase(), style: fl.monoSmall.copyWith(color: fl.ink)),
+              const SizedBox(width: FlSpace.sm),
+              Expanded(child: DottedLine(color: fl.controlBorder, dot: 2, gap: 4)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// How the token will read on the donor's chalkboard, updated as the form
+/// is filled in, so "Print token" is no surprise.
+class _BoardPreview extends StatelessWidget {
+  const _BoardPreview({required this.title, required this.quantity, required this.unit, required this.deadline});
+  final String title;
+  final int? quantity;
+  final String unit;
+  final DateTime deadline;
+
+  @override
+  Widget build(BuildContext context) {
+    final fl = context.fl;
+    final name = title.isEmpty ? 'Your dish' : title;
+    final count = quantity == null || quantity! < 1 ? '-- $unit' : Fmt.quantity(quantity!, unit);
+    return Semantics(
+      label: 'On the board it will read: $name, $count, until ${Fmt.time(deadline)}',
+      child: ExcludeSemantics(
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.fromLTRB(FlSpace.lg, FlSpace.md, FlSpace.lg, FlSpace.xs),
+          decoration: BoxDecoration(
+            color: fl.board,
+            borderRadius: BorderRadius.circular(FlRadius.sharp),
+            border: Border.all(color: fl.boardFrame, width: 4),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('ON THE BOARD IT READS', style: fl.monoSmall.copyWith(color: fl.chalkSoft)),
+              ChalkItem(name: name, trailing: count, note: 'UNTIL ${Fmt.time(deadline)}'),
+            ],
+          ),
         ),
       ),
     );

@@ -1,8 +1,10 @@
 // Profile and settings: who you are, the paper/chalkboard switch, sign out.
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/format.dart';
 import '../../core/theme/tokens.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
@@ -30,11 +32,15 @@ class ProfileScreen extends StatelessWidget {
         ReceiptTimeline(
           title: user.name,
           heading: 'Member slip',
-          stamp: StatusStamp.custom(user.role.label.toUpperCase(), color: fl.chilliDeep),
+          // A role is not a verdict, so it is stamped in ink (chilli means
+          // REJECTED elsewhere), the same as on the Approvals register.
+          stamp: StatusStamp.custom(user.role.label.toUpperCase(), color: fl.ink),
           entries: [
             ReceiptEntry('Email', user.email),
-            ReceiptEntry('Phone', user.phone),
-            if (user.organization.isNotEmpty) ReceiptEntry('From', user.organization),
+            ReceiptEntry('Phone', Fmt.phone(user.phone)),
+            // The donor's name IS the canteen, so "From" would repeat the title.
+            if (user.organization.isNotEmpty && user.organization != user.name)
+              ReceiptEntry('From', user.organization),
             ReceiptEntry('Account', user.isApproved ? 'Approved' : 'Waiting', emphasis: true),
           ],
         ),
@@ -56,10 +62,9 @@ class ProfileScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text('Chalkboard mode', style: context.text.titleMedium),
+                        // What the switch does, not what is on screen now.
                         Text(
-                          theme.isChalkboard
-                              ? 'Dark slate with chalk text'
-                              : 'Warm paper with ink text',
+                          'Dark slate with chalk text, for low light',
                           style: context.text.bodyMedium?.copyWith(color: fl.inkSoft),
                         ),
                       ],
@@ -74,8 +79,9 @@ class ProfileScreen extends StatelessWidget {
         const Divider(height: FlSpace.xxl),
 
         Wrap(
-          spacing: FlSpace.md,
+          spacing: FlSpace.xl,
           runSpacing: FlSpace.md,
+          crossAxisAlignment: WrapCrossAlignment.center,
           children: [
             FlButton(
               label: 'Sign out',
@@ -83,10 +89,12 @@ class ProfileScreen extends StatelessWidget {
               variant: FlButtonVariant.outline,
               onPressed: () => auth.logout(),
             ),
-            TextButton(
-              onPressed: () => context.push('/gallery'),
-              child: const Text('Component gallery'),
-            ),
+            // A developer screen: only offered in debug builds.
+            if (kDebugMode)
+              TextButton(
+                onPressed: () => context.push('/gallery'),
+                child: const Text('Component gallery'),
+              ),
           ],
         ),
       ],

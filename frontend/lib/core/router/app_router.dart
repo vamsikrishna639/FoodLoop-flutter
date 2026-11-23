@@ -144,7 +144,8 @@ GoRouter buildRouter(AuthProvider auth) {
             currentPath: state.matchedLocation,
             onNavigate: (path) => context.go(path),
             action: _actionFor(context, user.role),
-            activityRail: const ActivityRail(),
+            // Alerts already lists the same events, so the rail would repeat it.
+            activityRail: state.matchedLocation == '/notifications' ? null : const ActivityRail(),
             child: child,
           );
         },
