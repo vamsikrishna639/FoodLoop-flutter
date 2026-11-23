@@ -80,6 +80,7 @@ abstract final class AppTheme {
   // ---- Theme -------------------------------------------------------------
 
   static ThemeData _build(_Palette p, Brightness brightness) {
+    final isPaper = brightness == Brightness.light;
     final textTheme = TextTheme(
       displayLarge: _display(56, FontWeight.w800, 1.0, -1.5, p.ink),
       displayMedium: _display(44, FontWeight.w700, 1.05, -1.0, p.ink),
@@ -115,6 +116,11 @@ abstract final class AppTheme {
       turmericDeep: p.turmericDeep,
       onTurmeric: _onTurmeric,
       stampGrey: p.stampGrey,
+      // Slip marks sit on an ink slip, so they borrow the other theme's accents.
+      // Paper (dark slip): turmeric 7.96, chalkboard chilli 5.51.
+      // Chalkboard (light slip): paper turmericDeep 4.84, paper chilliDeep 4.65.
+      slipDone: isPaper ? p.turmeric : _paperColors.turmericDeep,
+      slipError: isPaper ? _chalkColors.chilli : _paperColors.chilliDeep,
       board: _board,
       boardFrame: _boardFrame,
       chalk: _chalk,

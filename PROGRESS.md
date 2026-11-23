@@ -66,7 +66,7 @@ files (clean). The UI has **not** been run or screenshotted yet.
 
 | Item | Status |
 |---|---|
-| Postman collection with negative tests (over-allocation, wrong role, invalid transition), about 75 requests | **Exists, not run this session.** `backend/postman/FoodLoop.postman_collection.json`, `npm run test:api` |
+| Postman collection with negative tests (over-allocation, wrong role, invalid transition), 80 requests | **Done.** Passed 2026-11-23 on a fresh seed: 80 requests, 231 assertions, 0 failures. `backend/postman/FoodLoop.postman_collection.json`, `npm run test:api` (needs the backend running) |
 | Playwright screenshots at 360, 768, 1440 px, paper and chalkboard modes | **Missing** |
 | Dark mode visual check | **Missing** |
 | `/impeccable audit` and `/impeccable polish` | **Missing** (the only critique file in `.impeccable/critique/` is about an old JSX page, not this app) |
@@ -119,31 +119,31 @@ already matched. These corrections were made:
 
 ---
 
-## 3. Known bugs (found, not yet fixed)
+## 3. Known bugs
 
-DESIGN.md still describes the intended (passing) behaviour for these. They need
-**app code** fixes.
+All five contrast bugs from the first audit are fixed (2026-11-23). Ratios use
+the WCAG relative-luminance formula, and DESIGN.md 1.4 lists them.
 
-| # | Bug | Where | Measured | Target |
-|---|---|---|---|---|
-| 1 | Snackbar DONE mark, chalkboard mode (turmeric `#F2B65A` on chalk slip `#ECE8DF`) | `frontend/lib/widgets/slip_snackbar.dart` | 1.48:1 | ≥ 4.5:1. DESIGN.md 1.5 says to use the opposite theme's accents: paper `turmericDeep` `#8A5A0B` on chalk gives 4.84 |
-| 2 | Snackbar NOT DONE mark, chalkboard mode (chilli `#F0674B` on `#ECE8DF`) | same | 2.55:1 | ≥ 4.5:1. Paper `chilliDeep` `#B93A21` gives 4.65 |
-| 3 | Snackbar NOT DONE mark, paper mode (chilli `#D9472B` on ink slip `#1E1B16`) | same | 3.99:1 | ≥ 4.5:1. Chalkboard `chilli` `#F0674B` on ink gives 5.51. (DONE in paper mode, turmeric on ink, is 7.96 and passes) |
-| 4 | Sidebar / rail "Post food" label, paper mode (ink `#1E1B16` on brand chilli `#D9472B`) | `frontend/lib/widgets/responsive_shell.dart` (`_SideAction`) | 3.99:1 | ≥ 4.5:1. For example `chilliDeep` fill with `onChilli` label (5.37), as DESIGN.md's accent button specifies. Chalkboard mode is 5.51 and passes |
-| 5 | "TOKEN" caption on the ticket block is 8px | `frontend/lib/widgets/token_card.dart` (`_TicketBlock`) | 8px | No text below DESIGN.md's minimum (12.5 body; `monoSmall` 11.5 is the smallest defined style). Use `monoSmall` size, or treat it as decoration and wrap it in `ExcludeSemantics`, then record the decision in DESIGN.md |
+| # | Bug | Fix | Now |
+|---|---|---|---|
+| 1 | Snackbar DONE mark, chalkboard mode (1.48:1) | New `slipDone` token = paper `turmericDeep` `#8A5A0B` in chalkboard (paper mode keeps turmeric) | 4.84 |
+| 2 | Snackbar NOT DONE mark, chalkboard mode (2.55:1) | New `slipError` token = paper `chilliDeep` `#B93A21` | 4.65 |
+| 3 | Snackbar NOT DONE mark, paper mode (3.99:1) | `slipError` = chalkboard `chilli` `#F0674B` | 5.51 |
+| 4 | Sidebar / rail "Post food" label, paper mode (3.99:1) | `_SideAction` uses `chilliDeep` fill and `onChilli` label and icon, as the accent button does | 5.37 paper, 5.51 chalkboard; hover 6.01 / 4.78 |
+| 5 | "TOKEN" caption at 8px | `monoSmall` size, in `ink` (the food-type tone fails on its tint at this size: chilli 3.87 on the dark tint), `ExcludeSemantics`, clips instead of overflowing | 8.94 – 13.71 |
 
-How the ratios were measured: WCAG relative-luminance formula in a short Node
-one-liner (see the session notes; easy to re-run).
+Files: `frontend/lib/core/theme/tokens.dart`, `frontend/lib/core/theme/app_theme.dart`,
+`frontend/lib/widgets/slip_snackbar.dart`, `frontend/lib/widgets/responsive_shell.dart`,
+`frontend/lib/widgets/token_card.dart`. `flutter analyze` and the Dart MCP are clean.
+These were checked by calculation only. The screenshot pass (plan step 3) is the visual check.
 
 ---
 
 ## 4. Remaining plan (in this order)
 
-1. **Backend check:** in `backend/`, run `npm run seed` (wiping the local
-   `foodloop` DB is approved), then `npm run test:api` (newman on the Postman
-   collection). Fix any failures. Commit and push.
-2. **Fix contrast bugs** 1–5 above. Keep DESIGN.md in sync. Commit and push.
-3. **Screenshots:** `flutter build web` (or `flutter run -d web-server`), start
+1. ~~Backend check~~ (done: all pass).
+2. ~~Fix contrast bugs 1–5~~ (done).
+3. **Screenshots:** re-seed first (`npm run test:api` adds test data), then `flutter build web` (or `flutter run -d web-server`), start
    the backend, and use the Playwright MCP to screenshot every screen at 360, 768
    and 1440 px in paper and chalkboard modes, logged in as each role. Fix overflow,
    spacing and contrast. **Pause and show the user the results before fixing.**
@@ -187,7 +187,8 @@ one-liner (see the session notes; easy to re-run).
   (`dart mcp-server`) are configured in `.mcp.json` (project scope). A fresh
   session must approve them. At the end of this session both timed out while
   connecting, so check they start (`npx @playwright/mcp@latest`, `dart mcp-server`)
-  if they fail again. `.mcp.json` is not committed yet.
+  if they fail again. Since `ae52c9b` Playwright runs through `cmd /c npx -y`,
+  and `.claude/settings.json` sets `MCP_TIMEOUT` to 120000. Both connected after that.
 - **Android:** VS Code shows a Gradle/Java build error. It is an Android build
   issue and has not been looked at. Web is the target for screenshots.
 - **git push:** Git Credential Manager handles GitHub sign-in. One push in this

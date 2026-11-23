@@ -59,6 +59,8 @@ colour, easing, duration, restraint) are applied here with Flutter APIs:
 | `turmericDeep` | `#8A5A0B` | Turmeric used as **text** or a stamp |
 | `onTurmeric` | `#1E1B16` | Ink text on a turmeric fill |
 | `stampGrey` | `#6B6255` | EXPIRED and CANCELLED stamps |
+| `slipDone` | `#E8A33D` | DONE mark on the (dark) slip snackbar |
+| `slipError` | `#F0674B` | NOT DONE mark on the slip snackbar (the chalkboard `chilli`) |
 
 The non-veg marker uses `chilliDeep`.
 
@@ -82,6 +84,8 @@ The non-veg marker uses `chilliDeep`.
 | `turmeric` | `#F2B65A` | Brightened turmeric; safe as text here |
 | `turmericDeep` | `#F2B65A` | Same as `turmeric` in dark |
 | `stampGrey` | `#8E958F` | EXPIRED and CANCELLED stamps |
+| `slipDone` | `#8A5A0B` | DONE mark on the (light) slip snackbar (the paper `turmericDeep`) |
+| `slipError` | `#B93A21` | NOT DONE mark on the slip snackbar (the paper `chilliDeep`) |
 
 ### 1.3 Chalkboard block (same in both themes)
 
@@ -114,6 +118,10 @@ Measured ratios; text needs 4.5:1 and non-text 3:1.
 | chalk on slate; inkSoft on dark surface | 12.88; 5.60 | pass |
 | dark chilli / leaf / turmeric on dark surface | 4.51 / 6.32 / 7.77 | pass |
 | ink on dark chilli (button label) | 5.51 | pass |
+| Sidebar / rail "Post food": `onChilli` on `chilliDeep` (paper / chalkboard; 90% hover fill on the board) | 5.37 / 5.51 (6.01 / 4.78) | pass |
+| Slip DONE mark: `slipDone` on the ink slip (paper / chalkboard) | 7.96 / 4.84 | pass |
+| Slip NOT DONE mark: `slipError` on the ink slip (paper / chalkboard) | 5.51 / 4.65 | pass |
+| Ticket-block "TOKEN" caption: `ink` on the 12% food-type tint | 8.94 – 13.71 | pass (the tone itself is 3.87 for chilli on the dark tint, so it is kept for the 28px initials and the rule only) |
 
 Rules that follow:
 - `chilli` is the *brand* red. Anything a user must **read** in red uses `chilliDeep`.
@@ -137,6 +145,8 @@ Rules that follow:
    and settings. The choice is saved, so it is restored on app start.
 5. The slip snackbar is ink-coloured (dark on paper, light on the chalkboard), so
    its DONE / NOT DONE marks use the opposite theme's accents to stay above 4.5:1.
+   These are the `slipDone` and `slipError` tokens, set in `_build()` from the
+   other palette.
 
 ---
 
@@ -294,6 +304,8 @@ Minimum tap target is 48×48 logical pixels (`minimumSize` in the button themes,
 - **Primary (ink):** `ink` fill, `paper` label. The default action on most screens.
 - **Accent (chilli):** `chilliDeep` fill, `onChilli` label. Reserved for the
   single most important action on a screen (Request food, Post food).
+  The sidebar and rail "Post food" action on the dark board uses the same
+  colours.
 - **Outline:** 1.5px `ink` border, ink label.
 - `FlButton` has exactly these three variants. Low-emphasis actions use a plain
   Material `TextButton`, themed with an ink label, a 48×48 minimum and no
@@ -333,7 +345,9 @@ The food listing. A slip of `surface` paper with:
   the perforation.
 - **Ticket block, with no image** (the normal case): a printed square tinted with
   the food-type colour (`leaf`, `chilliDeep` or `turmericDeep` at 12%, with a 45%
-  border), a small "TOKEN" caption rule, and the dish's two initials ("CB" for
+  border), a small "TOKEN" caption (`monoSmall` in `ink`, hidden from screen
+  readers as decoration, clipped rather than overflowing at large text sizes)
+  followed by a rule in the food-type colour, and the dish's two initials ("CB" for
   Chicken Biryani) in Bricolage `headlineMedium`. A photo replaces it when
   `imageUrl` is set; a slow or broken image falls back to the printed block.
 - **Selected** (the token open in the side panel): an `ink` outline and the lifted
@@ -414,7 +428,7 @@ marker, and has a `Semantics` label ("Veg food").
 ### Slip snackbar (`slip_snackbar.dart`)
 Feedback appears as a small printed slip: `ink` background, mono text, and a small
 boxed word (DONE, NOT DONE, or NOTE for plain information) so the result never
-depends on colour. Shown through a floating `SnackBar` with a transparent
+depends on colour. The marks are `slipDone`, `slipError` and `paper` (section 1.5). Shown through a floating `SnackBar` with a transparent
 background (set in the theme) for 4 seconds; a fixed 420px wide on screens 600px
 and wider. It is a live region, so screen readers announce it.
 

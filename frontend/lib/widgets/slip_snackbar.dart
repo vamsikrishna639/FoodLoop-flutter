@@ -35,12 +35,13 @@ class _Slip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fl = context.fl;
-    // The slip is always "ink" coloured: dark in light mode, light in dark mode.
+    // The slip is always "ink" coloured: dark in light mode, light in dark mode,
+    // so the marks use the slip tokens (the opposite theme's accents).
     final (Color mark, String word) = error
-        ? (fl.chilli, 'NOT DONE')
+        ? (fl.slipError, 'NOT DONE')
         : note
             ? (fl.paper, 'NOTE')
-            : (fl.turmeric, 'DONE');
+            : (fl.slipDone, 'DONE');
 
     return Semantics(
       liveRegion: true, // screen readers announce it without moving focus

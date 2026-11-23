@@ -213,17 +213,18 @@ class _SideAction extends StatelessWidget {
         height: compact ? 56 : 48,
         width: compact ? 56 : double.infinity,
         decoration: BoxDecoration(
-          color: hovered ? fl.chilli.withValues(alpha: 0.9) : fl.chilli,
+          color: hovered ? fl.chilliDeep.withValues(alpha: 0.9) : fl.chilliDeep,
           borderRadius: BorderRadius.circular(FlRadius.control),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // On the board the red is the brighter brand chilli with ink text.
-            Icon(action.icon, color: fl.onTurmeric, size: 22),
+            // Same colours as the accent FlButton: chilliDeep fill, onChilli label
+            // (5.37 on paper, 5.51 on the chalkboard; hover stays above 4.5).
+            Icon(action.icon, color: fl.onChilli, size: 22),
             if (!compact) ...[
               const SizedBox(width: FlSpace.sm),
-              Text(action.label, style: context.text.labelLarge?.copyWith(color: fl.onTurmeric)),
+              Text(action.label, style: context.text.labelLarge?.copyWith(color: fl.onChilli)),
             ],
           ],
         ),

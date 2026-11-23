@@ -252,14 +252,28 @@ class _TicketBlock extends StatelessWidget {
       ),
       child: Stack(
         children: [
-          // A printed rule and caption, like the header of a real slip.
+          // A printed rule and caption, like the header of a real slip. The
+          // caption is monoSmall (the smallest style) in ink, which stays above
+          // 4.5:1 on every food-type tint; the tone lives in the rule and the
+          // initials. It is decoration, so screen readers skip it, and it clips
+          // rather than overflows when the system text size is raised.
           Positioned(
             left: 7,
             right: 7,
-            top: 7,
+            top: 6,
             child: Row(
               children: [
-                Text('TOKEN', style: fl.monoSmall.copyWith(fontSize: 8, color: tone)),
+                Flexible(
+                  child: ExcludeSemantics(
+                    child: Text(
+                      'TOKEN',
+                      maxLines: 1,
+                      softWrap: false,
+                      overflow: TextOverflow.clip,
+                      style: fl.monoSmall.copyWith(color: fl.ink, letterSpacing: 0.4),
+                    ),
+                  ),
+                ),
                 const SizedBox(width: 4),
                 Expanded(child: Container(height: 1, color: tone.withValues(alpha: 0.45))),
               ],

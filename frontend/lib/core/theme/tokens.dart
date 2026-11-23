@@ -94,6 +94,8 @@ class FoodLoopTokens extends ThemeExtension<FoodLoopTokens> {
     required this.turmericDeep,
     required this.onTurmeric,
     required this.stampGrey,
+    required this.slipDone,
+    required this.slipError,
     required this.board,
     required this.boardFrame,
     required this.chalk,
@@ -126,6 +128,12 @@ class FoodLoopTokens extends ThemeExtension<FoodLoopTokens> {
   final Color turmericDeep; // turmeric that is safe for text
   final Color onTurmeric;
   final Color stampGrey; // EXPIRED / CANCELLED stamps
+
+  // Marks on the ink-coloured slip snackbar. The slip is the opposite of the
+  // page (dark on paper, light on the chalkboard), so these come from the
+  // opposite theme's accents to stay above 4.5:1.
+  final Color slipDone; // DONE mark
+  final Color slipError; // NOT DONE mark
 
   // Chalkboard block: dark in both themes
   final Color board;
