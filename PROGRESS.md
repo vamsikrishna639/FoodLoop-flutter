@@ -67,8 +67,8 @@ files (clean). The UI has **not** been run or screenshotted yet.
 | Item | Status |
 |---|---|
 | Postman collection with negative tests (over-allocation, wrong role, invalid transition), 80 requests | **Done.** Passed 2026-11-23 on a fresh seed: 80 requests, 231 assertions, 0 failures. `backend/postman/FoodLoop.postman_collection.json`, `npm run test:api` (needs the backend running) |
-| Playwright screenshots at 360, 768, 1440 px, paper and chalkboard modes | **Missing** |
-| Dark mode visual check | **Missing** |
+| Playwright screenshots at 360, 768, 1440 px, paper and chalkboard modes | **Captured, not fixed.** `docs/screenshots/`, `docs/FINDINGS.md` |
+| Dark mode visual check | **Done** as part of the screenshots (see F2 in `docs/FINDINGS.md`) |
 | `/impeccable audit` and `/impeccable polish` | **Missing** (the only critique file in `.impeccable/critique/` is about an old JSX page, not this app) |
 | review-animations | **Missing** |
 | Root `README.md` (setup, test logins, demo script) | **Missing** (the root README is the one line from the GitHub repo) |
@@ -143,7 +143,7 @@ These were checked by calculation only. The screenshot pass (plan step 3) is the
 
 1. ~~Backend check~~ (done: all pass).
 2. ~~Fix contrast bugs 1–5~~ (done).
-3. **Screenshots:** re-seed first (`npm run test:api` adds test data), then `flutter build web` (or `flutter run -d web-server`), start
+3. **Screenshots:** captured 2026-11-23, 194 PNGs in `docs/screenshots/`, findings in `docs/FINDINGS.md` (F1-F36, nothing fixed yet; waiting for the user's review). Notes for re-running: re-seed first (`npm run test:api` adds test data), then `flutter build web` (or `flutter run -d web-server`), start
    the backend, and use the Playwright MCP to screenshot every screen at 360, 768
    and 1440 px in paper and chalkboard modes, logged in as each role. Fix overflow,
    spacing and contrast. **Pause and show the user the results before fixing.**

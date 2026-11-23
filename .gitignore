@@ -7,3 +7,4 @@ frontend/.dart_tool/
 # Machine-local tool settings
 .claude/settings.local.json
 .impeccable/config.local.json
+.playwright-mcp/
