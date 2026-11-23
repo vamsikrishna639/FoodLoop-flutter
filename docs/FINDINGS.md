@@ -61,6 +61,8 @@ polish.
 ## High
 
 **F1. The "TOKEN" caption clips to "TOKI" on every token card.** *(Regression from bug-5 fix, `e5d3c43`)*
+- **Fixed.** The caption now takes its natural width and the rule fills the
+  rest (a `LayoutBuilder` caps the caption at the block width).
 - At `monoSmall` (11.5px), "TOKEN" plus the 4px gap and the rule don't fit the
   ticket block's 54px inner width, so the `Flexible` clips the word.
 - It happens at every width, in both modes, on every TokenCard: feed, detail,

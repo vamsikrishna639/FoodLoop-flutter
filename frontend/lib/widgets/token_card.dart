@@ -257,26 +257,35 @@ class _TicketBlock extends StatelessWidget {
           // 4.5:1 on every food-type tint; the tone lives in the rule and the
           // initials. It is decoration, so screen readers skip it, and it clips
           // rather than overflows when the system text size is raised.
+          //
+          // The caption takes its natural width first and the rule fills what
+          // is left. (A Flexible caption beside an Expanded rule would split
+          // the space 50/50 and clip "TOKEN" to "TOKI".)
           Positioned(
             left: 7,
             right: 7,
             top: 6,
-            child: Row(
-              children: [
-                Flexible(
-                  child: ExcludeSemantics(
-                    child: Text(
-                      'TOKEN',
-                      maxLines: 1,
-                      softWrap: false,
-                      overflow: TextOverflow.clip,
-                      style: fl.monoSmall.copyWith(color: fl.ink, letterSpacing: 0.4),
+            child: LayoutBuilder(
+              builder: (context, constraints) => Row(
+                children: [
+                  ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: constraints.maxWidth),
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: 4),
+                      child: ExcludeSemantics(
+                        child: Text(
+                          'TOKEN',
+                          maxLines: 1,
+                          softWrap: false,
+                          overflow: TextOverflow.clip,
+                          style: fl.monoSmall.copyWith(color: fl.ink, letterSpacing: 0.4),
+                        ),
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 4),
-                Expanded(child: Container(height: 1, color: tone.withValues(alpha: 0.45))),
-              ],
+                  Expanded(child: Container(height: 1, color: tone.withValues(alpha: 0.45))),
+                ],
+              ),
             ),
           ),
           Align(

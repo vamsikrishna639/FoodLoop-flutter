@@ -347,7 +347,8 @@ The food listing. A slip of `surface` paper with:
   the food-type colour (`leaf`, `chilliDeep` or `turmericDeep` at 12%, with a 45%
   border), a small "TOKEN" caption (`monoSmall` in `ink`, hidden from screen
   readers as decoration, clipped rather than overflowing at large text sizes)
-  followed by a rule in the food-type colour, and the dish's two initials ("CB" for
+  followed by a rule in the food-type colour that fills the space the full
+  caption leaves, and the dish's two initials ("CB" for
   Chicken Biryani) in Bricolage `headlineMedium`. A photo replaces it when
   `imageUrl` is set; a slow or broken image falls back to the printed block.
 - **Selected** (the token open in the side panel): an `ink` outline and the lifted
