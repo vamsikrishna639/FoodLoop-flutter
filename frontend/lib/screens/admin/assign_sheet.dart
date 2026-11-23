@@ -26,6 +26,9 @@ Future<String?> showAssignSheet(BuildContext context, ClaimRequest claim) {
   if (context.isMobile) {
     return showModalBottomSheet<String>(
       context: context,
+      // On the root navigator, so the sheet and its dimmed backdrop also
+      // cover the bottom bar (which would otherwise look tappable).
+      useRootNavigator: true,
       // The sheet slides up; with reduced motion it simply appears.
       sheetAnimationStyle: FlMotion.reduced(context) ? AnimationStyle.noAnimation : null,
       isScrollControlled: true,

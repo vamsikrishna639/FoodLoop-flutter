@@ -22,10 +22,16 @@ class ShellDestination {
 
 /// The role's main action ("Post food", "Browse").
 class ShellAction {
-  const ShellAction({required this.label, required this.icon, required this.onTap});
+  const ShellAction({required this.label, required this.icon, required this.onTap, this.path});
   final String label;
   final IconData icon;
   final VoidCallback onTap;
+
+  /// Set when the action IS a page (the recipient's Browse opens the
+  /// counter). On phones the raised action then replaces that page's tab,
+  /// so the bar does not offer the same place twice, and it shows as
+  /// selected while that page is open.
+  final String? path;
 }
 
 class ResponsiveShell extends StatelessWidget {
@@ -52,6 +58,11 @@ class ResponsiveShell extends StatelessWidget {
   static const double railWidth = 92;
   static const double activityWidth = 304;
 
+  /// How far the raised centre action pokes above the 68px bottom bar.
+  /// Scroll views on phones add this to their bottom padding, so the last
+  /// item can always scroll clear of the button.
+  static const double raisedOverhang = 28;
+
   bool _isCurrent(ShellDestination d) => currentPath == d.path || currentPath.startsWith('${d.path}/');
 
   @override
@@ -63,8 +74,13 @@ class ResponsiveShell extends StatelessWidget {
         return Scaffold(
           body: SafeArea(bottom: false, child: child),
           bottomNavigationBar: _BottomBar(
-            destinations: destinations,
+            destinations: [
+              for (final d in destinations)
+                if (action?.path == null || d.path != action!.path) d,
+            ],
             isCurrent: _isCurrent,
+            actionSelected: action?.path != null &&
+                (currentPath == action!.path || currentPath.startsWith('${action!.path}/')),
             onNavigate: onNavigate,
             action: action,
           ),
@@ -209,24 +225,41 @@ class _SideAction extends StatelessWidget {
       semanticLabel: action.label,
       focusRadius: FlRadius.control,
       onBoard: true,
+      // Same colours as the accent FlButton: chilliDeep fill, onChilli label
+      // (5.37 on paper, 5.51 on the chalkboard; hover stays above 4.5).
+      // On the narrow rail the label sits under the icon, the way every
+      // other rail item is labelled.
       builder: (context, hovered) => Container(
-        height: compact ? 56 : 48,
-        width: compact ? 56 : double.infinity,
+        constraints: BoxConstraints(minHeight: compact ? 64 : 48),
+        width: double.infinity,
+        padding: EdgeInsets.symmetric(horizontal: FlSpace.xs, vertical: compact ? FlSpace.sm : 0),
         decoration: BoxDecoration(
           color: hovered ? fl.chilliDeep.withValues(alpha: 0.9) : fl.chilliDeep,
           borderRadius: BorderRadius.circular(FlRadius.control),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Same colours as the accent FlButton: chilliDeep fill, onChilli label
-            // (5.37 on paper, 5.51 on the chalkboard; hover stays above 4.5).
-            Icon(action.icon, color: fl.onChilli, size: 22),
-            if (!compact) ...[
-              const SizedBox(width: FlSpace.sm),
-              Text(action.label, style: context.text.labelLarge?.copyWith(color: fl.onChilli)),
-            ],
-          ],
+        child: ExcludeSemantics(
+          child: compact
+              ? Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(action.icon, color: fl.onChilli, size: 22),
+                    const SizedBox(height: FlSpace.xs),
+                    Text(
+                      action.label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.text.labelSmall?.copyWith(color: fl.onChilli, fontWeight: FontWeight.w700),
+                    ),
+                  ],
+                )
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(action.icon, color: fl.onChilli, size: 22),
+                    const SizedBox(width: FlSpace.sm),
+                    Text(action.label, style: context.text.labelLarge?.copyWith(color: fl.onChilli)),
+                  ],
+                ),
         ),
       ),
     );
@@ -353,12 +386,19 @@ class _UserChip extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 class _BottomBar extends StatelessWidget {
-  const _BottomBar({required this.destinations, required this.isCurrent, required this.onNavigate, this.action});
+  const _BottomBar({
+    required this.destinations,
+    required this.isCurrent,
+    required this.onNavigate,
+    this.action,
+    this.actionSelected = false,
+  });
 
   final List<ShellDestination> destinations;
   final bool Function(ShellDestination) isCurrent;
   final ValueChanged<String> onNavigate;
   final ShellAction? action;
+  final bool actionSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -373,7 +413,7 @@ class _BottomBar extends StatelessWidget {
         ? [for (final d in destinations) item(d)]
         : [
             for (final d in destinations.take(half)) item(d),
-            Expanded(child: _RaisedAction(action: action!)),
+            Expanded(child: _RaisedAction(action: action!, selected: actionSelected)),
             for (final d in destinations.skip(half)) item(d),
           ];
 
@@ -437,8 +477,9 @@ class _BottomItem extends StatelessWidget {
 }
 
 class _RaisedAction extends StatelessWidget {
-  const _RaisedAction({required this.action});
+  const _RaisedAction({required this.action, this.selected = false});
   final ShellAction action;
+  final bool selected; // the action's own page is open
 
   @override
   Widget build(BuildContext context) {
@@ -446,6 +487,7 @@ class _RaisedAction extends StatelessWidget {
     return Pressable(
       onTap: action.onTap,
       semanticLabel: action.label,
+      selected: selected,
       focusRadius: FlRadius.control,
       builder: (context, _) => ExcludeSemantics(
         child: OverflowBox(
@@ -471,8 +513,15 @@ class _RaisedAction extends StatelessWidget {
               Text(action.label,
                   maxLines: 1,
                   style: context.text.labelSmall?.copyWith(color: fl.ink, fontWeight: FontWeight.w700)),
-              // Lines this label up with the labels of the tabs beside it.
-              const SizedBox(height: 15),
+              // The same ink dash as a selected tab, then the space that
+              // lines this label up with the labels of the tabs beside it.
+              const SizedBox(height: 3),
+              Container(
+                height: 3,
+                width: selected ? 20 : 0,
+                decoration: BoxDecoration(color: fl.ink, borderRadius: BorderRadius.circular(2)),
+              ),
+              const SizedBox(height: 9),
             ],
           ),
         ),
@@ -501,13 +550,15 @@ class _BadgedIcon extends StatelessWidget {
             top: -5,
             child: Container(
               // Minimums, so the count still fits when text is enlarged.
-              constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+              // monoSmall (11.5) is the smallest size the app prints.
+              constraints: const BoxConstraints(minWidth: 20, minHeight: 20),
               padding: const EdgeInsets.symmetric(horizontal: 4),
               alignment: Alignment.center,
-              decoration: BoxDecoration(color: fl.chilliDeep, borderRadius: BorderRadius.circular(9)),
+              decoration: BoxDecoration(color: fl.chilliDeep, borderRadius: BorderRadius.circular(10)),
               child: Text(
                 badge > 9 ? '9+' : '$badge',
-                style: fl.monoSmall.copyWith(color: fl.onChilli, fontSize: 10.5, letterSpacing: 0, height: 1),
+                style: fl.monoSmall.copyWith(
+                    color: fl.onChilli, fontWeight: FontWeight.w700, letterSpacing: 0, height: 1),
               ),
             ),
           ),

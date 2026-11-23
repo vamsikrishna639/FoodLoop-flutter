@@ -12,8 +12,8 @@
 //     Picked up ............................ --:--
 //     Delivered ............................ --:--
 //
-// Phones show one column. Wider screens lay the receipts out in two
-// staggered columns, like slips pinned to a board.
+// Phones show one column. Wider screens set the receipts two to a row,
+// with their tops level.
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
@@ -140,23 +140,24 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
             children: [for (final r in receipts) Padding(padding: const EdgeInsets.only(bottom: FlSpace.xl), child: r)],
           );
         }
-        // Two columns, filled alternately; the right one starts lower so
-        // the receipts look pinned up by hand rather than set in a grid.
-        Widget column(int start, {double top = 0}) => Expanded(
-              child: Padding(
-                padding: EdgeInsets.only(top: top),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+        // Two receipts per row, tops level, so the torn edges line up
+        // across the row and the eye reads them in order, left to right.
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (var i = 0; i < receipts.length; i += 2)
+              Padding(
+                padding: const EdgeInsets.only(bottom: FlSpace.xl),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    for (var i = start; i < receipts.length; i += 2)
-                      Padding(padding: const EdgeInsets.only(bottom: FlSpace.xl), child: receipts[i]),
+                    Expanded(child: receipts[i]),
+                    const SizedBox(width: FlSpace.xl),
+                    Expanded(child: i + 1 < receipts.length ? receipts[i + 1] : const SizedBox.shrink()),
                   ],
                 ),
               ),
-            );
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [column(0), const SizedBox(width: FlSpace.xl), column(1, top: FlSpace.xxl)],
+          ],
         );
       });
     }
@@ -237,10 +238,7 @@ class _RequestReceipt extends StatelessWidget {
           footer: l.donorName,
         ),
         const SizedBox(height: FlSpace.sm),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: FlSpace.xs),
-          child: Text(_nextStep(c), style: context.text.bodyMedium?.copyWith(color: fl.inkSoft)),
-        ),
+        Text(_nextStep(c), style: context.text.bodyMedium?.copyWith(color: fl.inkSoft)),
         if (c.canCancel)
           TextButton.icon(
             onPressed: onCancel,

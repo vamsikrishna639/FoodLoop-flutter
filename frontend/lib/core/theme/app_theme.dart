@@ -224,12 +224,24 @@ abstract final class AppTheme {
           shape: controlShape,
         ),
       ),
+      // A low-emphasis action reads like a printed link: no side padding, so
+      // it lines up with the text above it, and an underline (not a tinted
+      // box) on hover and keyboard focus. Still 48 tall to tap.
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: p.ink,
           minimumSize: const Size(48, 48),
-          textStyle: textTheme.labelLarge,
+          padding: EdgeInsets.zero,
           shape: controlShape,
+        ).copyWith(
+          textStyle: WidgetStateProperty.resolveWith(
+            (s) => s.contains(WidgetState.hovered) || s.contains(WidgetState.focused)
+                ? textTheme.labelLarge?.copyWith(decoration: TextDecoration.underline)
+                : textTheme.labelLarge,
+          ),
+          overlayColor: WidgetStateProperty.resolveWith(
+            (s) => s.contains(WidgetState.focused) ? p.ink.withValues(alpha: 0.08) : Colors.transparent,
+          ),
         ),
       ),
       iconButtonTheme: IconButtonThemeData(

@@ -28,6 +28,9 @@ Future<void> showListingForm(BuildContext context, {FoodListing? existing}) asyn
   if (context.isMobile) {
     message = await showModalBottomSheet<String>(
       context: context,
+      // On the root navigator, so the sheet and its dimmed backdrop also
+      // cover the bottom bar.
+      useRootNavigator: true,
       // The sheet slides up; with reduced motion it simply appears.
       sheetAnimationStyle: FlMotion.reduced(context) ? AnimationStyle.noAnimation : null,
       isScrollControlled: true, // lets the sheet grow tall and clear the keyboard

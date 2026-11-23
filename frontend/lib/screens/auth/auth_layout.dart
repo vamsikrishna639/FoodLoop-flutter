@@ -1,6 +1,8 @@
 // Shared layout for the login and register screens.
-//   Wide screens: a chalkboard panel on the left, the form on paper at right.
-//   Phones: a short chalkboard band on top, the form underneath.
+//   Tablets and wider (>= 720): a chalkboard panel on the left, the form on
+//   paper at right.
+//   Phones: a short chalkboard band on top (logo, the strapline under a
+//   chalk underline), the form underneath.
 import 'package:material_ui/material_ui.dart';
 
 import '../../core/responsive/breakpoints.dart';
@@ -14,11 +16,19 @@ class AuthLayout extends StatelessWidget {
   final Widget form;
   final double formMaxWidth;
 
+  /// From this width the entry screens (welcome, sign in, register) use the
+  /// split layout. A portrait tablet (768) is wide enough for both halves.
+  static const double splitWidth = 720;
+
+  /// Width of the board panel in the split layout: a little under half the
+  /// screen, capped so the form never ends up far away on wide monitors.
+  static double boardWidth(double screen) => (screen * 0.44).clamp(320, 620);
+
   @override
   Widget build(BuildContext context) {
     final fl = context.fl;
     final width = MediaQuery.sizeOf(context).width;
-    final split = width >= 900; // side-by-side needs room for both halves
+    final split = width >= splitWidth;
     final gutter = Breakpoints.gutter(context);
 
     final formArea = SingleChildScrollView(
@@ -36,12 +46,7 @@ class AuthLayout extends StatelessWidget {
           // Stretch, so the form starts at the top instead of being centred.
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // The board takes a little under half the screen, capped so the
-            // form never ends up far away from it on very wide monitors.
-            ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: (width * 0.44).clamp(380, 620)),
-              child: const _BoardPanel(),
-            ),
+            SizedBox(width: boardWidth(width), child: const _BoardPanel()),
             Expanded(child: SafeArea(child: formArea)),
           ],
         ),
@@ -56,9 +61,23 @@ class AuthLayout extends StatelessWidget {
             color: fl.board,
             child: SafeArea(
               bottom: false,
+              // A small menu board: the logo, a chalk underline and the
+              // strapline, so phones get the same canteen board as desktops.
               child: Padding(
                 padding: EdgeInsets.fromLTRB(gutter, FlSpace.lg, gutter, FlSpace.lg),
-                child: const BrandMark(onDark: true, size: 28),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const BrandMark(onDark: true, size: 28),
+                    const SizedBox(height: FlSpace.md),
+                    const ChalkUnderline(width: 120),
+                    const SizedBox(height: FlSpace.sm),
+                    Text(
+                      'SURPLUS FOOD, SERVED BEFORE THE BELL',
+                      style: fl.monoSmall.copyWith(color: fl.chalkSoft),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -76,20 +95,24 @@ class _BoardPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fl = context.fl;
+    // On a portrait tablet the panel is ~340 wide, so the headline steps
+    // down a size and the padding tightens.
+    final narrow = MediaQuery.sizeOf(context).width < 1100;
     return Container(
       color: fl.board,
       height: double.infinity,
       child: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(FlSpace.xxxl),
+          padding: EdgeInsets.all(narrow ? FlSpace.xxl : FlSpace.xxxl),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const BrandMark(onDark: true, size: 34),
-              const SizedBox(height: FlSpace.huge),
+              SizedBox(height: narrow ? FlSpace.xxxl : FlSpace.huge),
               Text(
                 'Surplus food, served before the bell.',
-                style: context.text.displayLarge?.copyWith(color: fl.chalk),
+                style: (narrow ? context.text.displaySmall : context.text.displayLarge)
+                    ?.copyWith(color: fl.chalk),
               ),
               const SizedBox(height: FlSpace.xl),
               Text(
@@ -111,12 +134,17 @@ class _BoardPanel extends StatelessWidget {
 }
 
 /// A text field with its label above it (never placeholder-only).
+///
+/// [helper] is a short hint printed under the label, flush with it. (A
+/// Material helperText sits under the field, indented by the field's inner
+/// padding, so it never lined up with the label.)
 class LabeledField extends StatelessWidget {
-  const LabeledField({super.key, required this.label, required this.child, this.optional = false});
+  const LabeledField({super.key, required this.label, required this.child, this.optional = false, this.helper});
 
   final String label;
   final Widget child;
   final bool optional;
+  final String? helper;
 
   @override
   Widget build(BuildContext context) {
@@ -139,10 +167,53 @@ class LabeledField extends StatelessWidget {
               ],
             ),
           ),
+          if (helper != null)
+            ExcludeSemantics(
+              child: Padding(
+                padding: const EdgeInsets.only(top: FlSpace.xxs),
+                child: Text(helper!, style: context.text.bodySmall),
+              ),
+            ),
           const SizedBox(height: FlSpace.sm),
-          Semantics(label: optional ? '$label, optional' : label, child: child),
+          Semantics(
+            label: [label, if (optional) 'optional', ?helper].join(', '),
+            child: child,
+          ),
         ],
       ),
+    );
+  }
+}
+
+/// "New to FoodLoop? Create an account": a sentence with a link at its end.
+/// The link uses the sentence's own type size, so the two share a baseline,
+/// and it starts right after the words instead of a button's padding away.
+class InlineLink extends StatelessWidget {
+  const InlineLink({super.key, required this.lead, required this.link, required this.onPressed});
+  final String lead;
+  final String link;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final linkStyle = context.text.bodyMedium?.copyWith(fontWeight: FontWeight.w700);
+    return Wrap(
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: FlSpace.xs,
+      children: [
+        Text(lead, style: context.text.bodyMedium),
+        TextButton(
+          onPressed: onPressed,
+          style: const ButtonStyle().copyWith(
+            textStyle: WidgetStateProperty.resolveWith(
+              (s) => s.contains(WidgetState.hovered) || s.contains(WidgetState.focused)
+                  ? linkStyle?.copyWith(decoration: TextDecoration.underline)
+                  : linkStyle,
+            ),
+          ),
+          child: Text(link),
+        ),
+      ],
     );
   }
 }

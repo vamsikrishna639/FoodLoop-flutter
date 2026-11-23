@@ -38,12 +38,7 @@ class Chalkboard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: FlSpace.sm),
-          // A hand-drawn chalk underline: slightly wavy.
-          SizedBox(
-            height: 8,
-            width: 160,
-            child: CustomPaint(painter: _ChalkUnderlinePainter(fl.turmeric)),
-          ),
+          const ChalkUnderline(),
           if (caption != null) ...[
             const SizedBox(height: FlSpace.sm),
             Text(caption!.toUpperCase(), style: fl.monoSmall.copyWith(color: fl.chalkSoft)),
@@ -97,6 +92,19 @@ class ChalkItem extends StatelessWidget {
       ),
     );
   }
+}
+
+/// The hand-drawn turmeric underline under a board heading: slightly wavy.
+class ChalkUnderline extends StatelessWidget {
+  const ChalkUnderline({super.key, this.width = 160});
+  final double width;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+        height: 8,
+        width: width,
+        child: CustomPaint(painter: _ChalkUnderlinePainter(context.fl.turmeric)),
+      );
 }
 
 class _ChalkUnderlinePainter extends CustomPainter {

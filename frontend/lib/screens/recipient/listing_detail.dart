@@ -25,6 +25,7 @@ import '../../widgets/fl_button.dart';
 import '../../widgets/portion_meter.dart';
 import '../../widgets/quantity_stepper.dart';
 import '../../widgets/receipt_timeline.dart';
+import '../../widgets/responsive_shell.dart';
 import '../../widgets/skeleton_token.dart';
 import '../../widgets/slip_snackbar.dart';
 import '../../widgets/status_stamp.dart';
@@ -151,6 +152,9 @@ class _ListingDetailViewState extends State<ListingDetailView> {
             imageUrl: l.imageUrl,
             heroTag: widget.useHero ? l.heroTag : null,
           ),
+        // Order: what it is, what is in it, then the request itself, so the
+        // action is near the top (on a tablet it is above the fold). The
+        // printed facts come after, for anyone who wants the detail.
         if (l.description.isNotEmpty) ...[
           const SizedBox(height: FlSpace.xl),
           ConstrainedBox(
@@ -158,20 +162,6 @@ class _ListingDetailViewState extends State<ListingDetailView> {
             child: Text(l.description, style: context.text.bodyLarge),
           ),
         ],
-        const SizedBox(height: FlSpace.xl),
-
-        // The facts, printed like a receipt.
-        ReceiptTimeline(
-          title: l.location,
-          heading: 'Collect from',
-          reference: '#${l.tokenNumber}',
-          entries: [
-            ReceiptEntry('Prepared', Fmt.dayTime(l.preparedAt)),
-            ReceiptEntry('Pickup by', Fmt.dayTime(l.pickupDeadline), emphasis: true),
-            ReceiptEntry('Posted', Fmt.quantity(l.quantity, l.unit)),
-            ReceiptEntry('Left', Fmt.quantity(l.available, l.unit), emphasis: true),
-          ],
-        ),
         const SizedBox(height: FlSpace.xl),
 
         Text('Allergens', style: context.text.titleLarge),
@@ -239,7 +229,20 @@ class _ListingDetailViewState extends State<ListingDetailView> {
         const SizedBox(height: FlSpace.xl),
 
         const _SafetyNote(),
-        SizedBox(height: context.isMobile ? FlSpace.xl : 0),
+        const SizedBox(height: FlSpace.xl),
+
+        // The facts, printed like a receipt.
+        ReceiptTimeline(
+          title: l.location,
+          heading: 'Collect from',
+          reference: '#${l.tokenNumber}',
+          entries: [
+            ReceiptEntry('Prepared', Fmt.dayTime(l.preparedAt)),
+            ReceiptEntry('Pickup by', Fmt.dayTime(l.pickupDeadline), emphasis: true),
+            ReceiptEntry('Posted', Fmt.quantity(l.quantity, l.unit)),
+            ReceiptEntry('Left', Fmt.quantity(l.available, l.unit), emphasis: true),
+          ],
+        ),
       ],
     );
   }
@@ -456,7 +459,8 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
     }
 
     return SingleChildScrollView(
-      padding: EdgeInsets.fromLTRB(gutter, FlSpace.sm, gutter, FlSpace.xxxl),
+      // The bottom padding also clears the raised centre action.
+      padding: EdgeInsets.fromLTRB(gutter, FlSpace.sm, gutter, FlSpace.xxxl + ResponsiveShell.raisedOverhang),
       child: Align(
         alignment: Alignment.topLeft,
         child: ConstrainedBox(
@@ -469,7 +473,6 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                 onPressed: _back,
                 icon: const Icon(Icons.arrow_back),
                 label: const Text('Counter'),
-                style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: FlSpace.sm)),
               ),
               const SizedBox(height: FlSpace.sm),
               body,

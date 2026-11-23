@@ -204,10 +204,12 @@ ShellAction? _actionFor(BuildContext context, UserRole role) => switch (role) {
           onTap: () => showListingForm(context),
         ),
       // Browse goes to the counter and puts the cursor in its search field
-      // (on phones this also opens the keyboard).
+      // (on phones this also opens the keyboard). It is the counter page, so
+      // on phones it takes the Counter tab's place instead of repeating it.
       UserRole.recipient => ShellAction(
           label: 'Browse',
           icon: Icons.search,
+          path: '/home',
           onTap: () {
             context.read<FeedProvider>().requestSearchFocus();
             context.go('/home');

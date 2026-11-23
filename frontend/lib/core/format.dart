@@ -25,13 +25,42 @@ abstract final class Fmt {
     };
   }
 
-  /// "just now", "8 min ago", "2 h ago", then "Yesterday, 4:30 PM".
+  /// "just now", "8m ago", "2h 05m ago", then "Yesterday, 4:30 PM".
+  /// The same compact units as the countdowns ("1h 44m"), so the app writes
+  /// a length of time one way everywhere.
   static String ago(DateTime t) {
     final d = DateTime.now().difference(t);
     if (d.inMinutes < 1) return 'just now';
-    if (d.inMinutes < 60) return '${d.inMinutes} min ago';
-    if (d.inHours < 12) return '${d.inHours} h ago';
+    if (d.inMinutes < 60) return '${d.inMinutes}m ago';
+    if (d.inHours < 12) {
+      final m = d.inMinutes % 60;
+      return m == 0 ? '${d.inHours}h ago' : '${d.inHours}h ${m.toString().padLeft(2, '0')}m ago';
+    }
     return dayTime(t);
+  }
+
+  /// Like [ago], but within a list already grouped by day it never repeats
+  /// the date: older lines show just the clock time ("4:30 PM").
+  static String agoInDay(DateTime t) {
+    final d = DateTime.now().difference(t);
+    return d.inHours < 12 ? ago(t) : time(t);
+  }
+
+  /// Joins the last two words with a non-breaking space, so a heading or a
+  /// sentence never ends on a line with one word on it ("Counter / 2").
+  static String noOrphan(String s) {
+    final i = s.trimRight().lastIndexOf(' ');
+    if (i <= 0) return s;
+    return '${s.substring(0, i)} ${s.substring(i + 1)}';
+  }
+
+  /// Indian mobile numbers in two groups of five ("90000 00003"). Anything
+  /// that is not ten plain digits is shown as it was typed.
+  static String phone(String p) {
+    final digits = p.replaceAll(RegExp(r'[\s-]'), '');
+    final m = RegExp(r'^(\+91)?(\d{5})(\d{5})$').firstMatch(digits);
+    if (m == null) return p;
+    return [if (m[1] != null) '+91', m[2], m[3]].join(' ');
   }
 
   /// "12 boxes", "1 kg", "1 plate".

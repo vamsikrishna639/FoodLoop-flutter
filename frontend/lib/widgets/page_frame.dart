@@ -2,8 +2,10 @@
 // an optional line of supporting text, optional actions, then the content.
 import 'package:material_ui/material_ui.dart';
 
+import '../core/format.dart';
 import '../core/responsive/breakpoints.dart';
 import '../core/theme/tokens.dart';
+import 'responsive_shell.dart';
 
 class PageFrame extends StatelessWidget {
   const PageFrame({
@@ -27,7 +29,13 @@ class PageFrame extends StatelessWidget {
     final mobile = context.isMobile;
 
     return SingleChildScrollView(
-      padding: EdgeInsets.fromLTRB(gutter, mobile ? FlSpace.xl : FlSpace.xxxl, gutter, FlSpace.xxxl),
+      // On phones the bottom padding also clears the raised centre action.
+      padding: EdgeInsets.fromLTRB(
+        gutter,
+        mobile ? FlSpace.xl : FlSpace.xxxl,
+        gutter,
+        FlSpace.xxxl + (mobile ? ResponsiveShell.raisedOverhang : 0),
+      ),
       child: Align(
         alignment: Alignment.topLeft,
         child: ConstrainedBox(
@@ -55,7 +63,8 @@ class PageFrame extends StatelessWidget {
                 const SizedBox(height: FlSpace.sm),
                 ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 560),
-                  child: Text(lede!, style: context.text.bodyLarge?.copyWith(color: context.fl.inkSoft)),
+                  child: Text(Fmt.noOrphan(lede!),
+                      style: context.text.bodyLarge?.copyWith(color: context.fl.inkSoft)),
                 ),
               ],
               SizedBox(height: mobile ? FlSpace.xl : FlSpace.xxl),

@@ -18,6 +18,7 @@
 // stays in its tab (new stamp, next button) so it never jumps away mid-task.
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/api/api_client.dart';
 import '../../core/format.dart';
@@ -34,6 +35,7 @@ import '../../widgets/filter_tag.dart';
 import '../../widgets/fl_button.dart';
 import '../../widgets/impact_number.dart';
 import '../../widgets/page_frame.dart';
+import '../../widgets/pressable.dart';
 import '../../widgets/receipt_timeline.dart';
 import '../../widgets/skeleton_token.dart';
 import '../../widgets/slip_snackbar.dart';
@@ -135,32 +137,41 @@ class _PickupsScreenState extends State<PickupsScreen> {
       );
     }
 
-    final tags = Wrap(
-      spacing: FlSpace.sm,
-      children: [
-        for (final t in _Tab.values)
-          FilterTag(
-            label: '${t.label}  ${all == null ? '' : inTab(t).length}'.trim(),
-            selected: _tab == t,
-            onTap: () => setState(() {
-              _tab = t;
-              _tabPicked = true;
-            }),
-          ),
-      ],
-    );
+    void pick(_Tab t) => setState(() {
+          _tab = t;
+          _tabPicked = true;
+        });
+    // Phones: three equal cells in one row (three pill tags wrapped onto a
+    // second line at 360). Wider: the usual tags.
+    final tags = context.isMobile
+        ? _TabStrip(
+            tabs: [for (final t in _Tab.values) (t.label, all == null ? null : inTab(t).length, _tab == t)],
+            onTap: (i) => pick(_Tab.values[i]),
+          )
+        : Wrap(
+            spacing: FlSpace.sm,
+            children: [
+              for (final t in _Tab.values)
+                FilterTag(
+                  label: '${t.label}  ${all == null ? '' : inTab(t).length}'.trim(),
+                  selected: _tab == t,
+                  onTap: () => pick(t),
+                ),
+            ],
+          );
 
     return PageFrame(
       title: 'Pickups',
-      // On phones the lede is left out so the first run's button is on
-      // screen without scrolling; the button labels explain the steps.
-      lede: context.isMobile ? null : 'Collect from the canteen counter, hand it over, and tap the button at each step.',
+      // Short on phones, so the first run's button is still on screen.
+      lede: context.isMobile
+          ? 'Tap the button at each step.'
+          : 'Collect from the canteen counter, hand it over, and tap the button at each step.',
       maxWidth: 960,
       children: [
         LayoutBuilder(builder: (context, box) {
           // Wide: the runs, with the volunteer's own tally beside them.
           // Narrow: the tally shrinks to one printed line under the tabs.
-          final wide = box.maxWidth >= 820;
+          final wide = box.maxWidth >= 640;
           final runs = Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -182,11 +193,79 @@ class _PickupsScreenState extends State<PickupsScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 560), child: runs)),
-              const SizedBox(width: FlSpace.xxxl),
-              SizedBox(width: 240, child: _Tally(stats: stats)),
+              const SizedBox(width: FlSpace.xxl),
+              SizedBox(width: 200, child: _Tally(stats: stats)),
             ],
           );
         }),
+      ],
+    );
+  }
+}
+
+/// The three tabs on a phone: one row of equal cells, the label over the
+/// count. The chosen cell is inked in and carries a tick, so the choice is
+/// not shown by colour alone.
+class _TabStrip extends StatelessWidget {
+  const _TabStrip({required this.tabs, required this.onTap});
+  final List<(String, int?, bool)> tabs; // label, count, selected
+  final ValueChanged<int> onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final fl = context.fl;
+    return Row(
+      children: [
+        for (final (i, (label, count, selected)) in tabs.indexed) ...[
+          if (i > 0) const SizedBox(width: FlSpace.xs),
+          Expanded(
+            child: Pressable(
+              onTap: () => onTap(i),
+              selected: selected,
+              focusRadius: FlRadius.control,
+              semanticLabel: '$label${count == null ? '' : ', $count'}',
+              builder: (context, hovered) => Container(
+                constraints: const BoxConstraints(minHeight: 52),
+                padding: const EdgeInsets.symmetric(horizontal: FlSpace.xs, vertical: FlSpace.xs),
+                decoration: BoxDecoration(
+                  color: selected ? fl.ink : (hovered ? fl.surfaceSunken : fl.surface),
+                  borderRadius: BorderRadius.circular(FlRadius.control),
+                  border: Border.all(color: selected ? fl.ink : fl.controlBorder),
+                ),
+                child: ExcludeSemantics(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: context.text.labelMedium?.copyWith(color: selected ? fl.paper : fl.ink),
+                      ),
+                      const SizedBox(height: FlSpace.xxs),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (selected) ...[
+                            Icon(Icons.check, size: 14, color: fl.paper),
+                            const SizedBox(width: FlSpace.xxs),
+                          ],
+                          Text(
+                            count == null ? '-' : '$count',
+                            style: fl.mono.copyWith(
+                              color: selected ? fl.paper : fl.inkSoft,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -203,8 +282,9 @@ class _Tally extends StatelessWidget {
     final s = stats;
     if (s == null) return const SizedBox.shrink();
     final runs = s['runsDelivered'];
+    // Level with the first slip, under the tags.
     return Padding(
-      padding: const EdgeInsets.only(top: FlSpace.xxxl + FlSpace.lg),
+      padding: const EdgeInsets.only(top: FlSpace.huge),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -296,7 +376,7 @@ class _RunSlipState extends State<_RunSlip> {
         ReceiptEntry('Carry', Fmt.quantity(r.requestedQuantity, l.unit), emphasis: true),
         ReceiptEntry('From', l.location),
         ReceiptEntry('To', to),
-        if (r.recipientPhone.isNotEmpty) ReceiptEntry('Phone', r.recipientPhone),
+        if (r.recipientPhone.isNotEmpty) ReceiptEntry('Phone', Fmt.phone(r.recipientPhone)),
         ReceiptEntry('Pickup by', Fmt.dayTime(l.pickupDeadline)),
         ReceiptEntry('Assigned', at(r.assignedAt)),
         ReceiptEntry('Picked up', at(r.pickedUpAt), emphasis: r.isPickedUp),
@@ -311,11 +391,18 @@ class _RunSlipState extends State<_RunSlip> {
         receipt,
         if (r.note.isNotEmpty) ...[
           const SizedBox(height: FlSpace.sm),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: FlSpace.xs),
-            child: Text('Note from ${r.recipientName}: "${r.note}"', style: context.text.bodyMedium),
-          ),
+          Text('Note from ${r.recipientName}: "${r.note}"', style: context.text.bodyMedium),
         ],
+        // The number on the slip, one tap from the phone's dialler.
+        if (r.recipientPhone.isNotEmpty && (r.isAssigned || r.isPickedUp))
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: () => launchUrl(Uri(scheme: 'tel', path: r.recipientPhone.replaceAll(' ', ''))),
+              icon: const Icon(Icons.call_outlined, size: 20),
+              label: Text('Call ${r.recipientName.split(' ').first}'),
+            ),
+          ),
         const SizedBox(height: FlSpace.md),
         AnimatedSwitcher(
           duration: FlMotion.fade(context, FlMotion.fast),
@@ -380,7 +467,7 @@ class _RunSlipState extends State<_RunSlip> {
               )
             else
               Padding(
-                padding: const EdgeInsets.only(top: FlSpace.sm, left: FlSpace.xs),
+                padding: const EdgeInsets.only(top: FlSpace.sm),
                 child: Text('Hand it to ${r.recipientName}, then tap the button.', style: done),
               ),
           ],

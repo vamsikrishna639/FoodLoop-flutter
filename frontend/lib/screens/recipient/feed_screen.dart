@@ -16,6 +16,7 @@ import '../../widgets/empty_state.dart';
 import '../../widgets/fade_up.dart';
 import '../../widgets/filter_tag.dart';
 import '../../widgets/skeleton_token.dart';
+import '../../widgets/responsive_shell.dart';
 import '../../widgets/token_card.dart';
 import '../../widgets/veg_marker.dart';
 import 'listing_detail.dart';
@@ -104,7 +105,7 @@ class _FeedScreenState extends State<FeedScreen> {
       onRefresh: feed.load,
       color: context.fl.ink,
       child: ListView(
-        padding: EdgeInsets.fromLTRB(gutter, FlSpace.xl, gutter, FlSpace.xxxl),
+        padding: EdgeInsets.fromLTRB(gutter, FlSpace.xl, gutter, FlSpace.xxxl + ResponsiveShell.raisedOverhang),
         children: [
           header,
           const SizedBox(height: FlSpace.lg),
@@ -180,7 +181,20 @@ class _FeedScreenState extends State<FeedScreen> {
                             child: SingleChildScrollView(
                               key: ValueKey(selected.id),
                               padding: const EdgeInsets.only(bottom: FlSpace.xxxl, top: FlSpace.xs),
-                              child: ListingDetailView(listing: selected, inPanel: true),
+                              // The panel is a sheet of paper laid beside the
+                              // tokens: its own surface and edge, so it reads
+                              // as the open token, not loose text.
+                              child: DecoratedBox(
+                                decoration: BoxDecoration(
+                                  color: context.fl.surface,
+                                  borderRadius: BorderRadius.circular(FlRadius.sharp),
+                                  border: Border.all(color: context.fl.line),
+                                ),
+                                child: Padding(
+                                  padding: EdgeInsets.all(context.isDesktop ? FlSpace.xl : FlSpace.lg),
+                                  child: ListingDetailView(listing: selected, inPanel: true),
+                                ),
+                              ),
                             ),
                           ),
                         ),

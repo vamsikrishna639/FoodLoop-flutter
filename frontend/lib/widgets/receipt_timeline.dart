@@ -9,6 +9,7 @@
 //     Picked up ................ --:--
 import 'package:material_ui/material_ui.dart';
 
+import '../core/format.dart';
 import '../core/theme/tokens.dart';
 import 'paper_shapes.dart';
 
@@ -64,7 +65,7 @@ class ReceiptTimeline extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(title, style: context.text.titleLarge),
+                          Text(Fmt.noOrphan(title), style: context.text.titleLarge),
                           const SizedBox(height: FlSpace.xs),
                           Text(
                             [heading.toUpperCase(), ?reference].join('  '),
@@ -119,9 +120,12 @@ class _ReceiptRow extends StatelessWidget {
           // LayoutBuilder gives the row's width, so the label and the value
           // can each be capped. The dotted leader then fills what is left and
           // the value always ends at the right edge, like a printed receipt.
+          // The row is top-aligned and the leader sits on the FIRST line's
+          // baseline, so a value that wraps onto a second line grows
+          // downwards and its label stays level with the start of it.
           child: LayoutBuilder(
             builder: (context, box) => Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 ConstrainedBox(
                   constraints: BoxConstraints(maxWidth: box.maxWidth * 0.36),
@@ -129,7 +133,7 @@ class _ReceiptRow extends StatelessWidget {
                 ),
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(6, 0, 6, 5),
+                    padding: EdgeInsets.fromLTRB(6, MediaQuery.textScalerOf(context).scale(12), 6, 0),
                     child: DottedLine(color: fl.perforation, dot: 2, gap: 4),
                   ),
                 ),

@@ -121,15 +121,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 },
               ),
               const SizedBox(height: FlSpace.xl),
-              Wrap(
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  Text('New to FoodLoop?', style: context.text.bodyMedium),
-                  TextButton(
-                    onPressed: _loading ? null : () => context.go('/register'),
-                    child: const Text('Create an account'),
-                  ),
-                ],
+              InlineLink(
+                lead: 'New to FoodLoop?',
+                link: 'Create an account',
+                onPressed: _loading ? null : () => context.go('/register'),
               ),
             ],
           ),

@@ -197,12 +197,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
             LabeledField(
               label: 'Phone',
+              helper: 'So a volunteer or canteen can reach you',
               child: TextFormField(
                 controller: _phone,
                 keyboardType: TextInputType.phone,
                 textInputAction: TextInputAction.next,
                 autofillHints: const [AutofillHints.telephoneNumber],
-                decoration: const InputDecoration(helperText: 'So a volunteer or canteen can reach you'),
                 validator: _check('phone', (v) {
                   if (v.isEmpty) return 'Enter your phone number';
                   if (!RegExp(r'^[0-9+\- ]{7,15}$').hasMatch(v)) return 'Use 7 to 15 digits';
@@ -212,6 +212,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
             LabeledField(
               label: 'Password',
+              helper: 'At least 6 characters',
               child: TextFormField(
                 controller: _password,
                 obscureText: _hidePassword,
@@ -219,7 +220,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 autofillHints: const [AutofillHints.newPassword],
                 onFieldSubmitted: (_) => _submit(),
                 decoration: InputDecoration(
-                  helperText: 'At least 6 characters',
                   suffixIcon: IconButton(
                     tooltip: _hidePassword ? 'Show password' : 'Hide password',
                     icon: Icon(_hidePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined),
@@ -241,15 +241,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
               onPressed: _submit,
             ),
             const SizedBox(height: FlSpace.xl),
-            Wrap(
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                Text('Already have an account?', style: context.text.bodyMedium),
-                TextButton(
-                  onPressed: _loading ? null : () => context.go('/login'),
-                  child: const Text('Sign in'),
-                ),
-              ],
+            InlineLink(
+              lead: 'Already have an account?',
+              link: 'Sign in',
+              onPressed: _loading ? null : () => context.go('/login'),
             ),
           ],
         ),

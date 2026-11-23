@@ -21,6 +21,7 @@ import '../../widgets/empty_state.dart';
 import '../../widgets/fl_button.dart';
 import '../../widgets/impact_number.dart';
 import '../../widgets/status_stamp.dart';
+import '../auth/auth_layout.dart' show AuthLayout;
 
 /// One step of "how it works".
 class _Step {
@@ -60,7 +61,9 @@ class WelcomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final wide = MediaQuery.sizeOf(context).width >= 900; // same split as sign in
+    // Same split as sign in, so a portrait tablet gets the board and the
+    // steps side by side instead of stretched phone slides.
+    final wide = MediaQuery.sizeOf(context).width >= AuthLayout.splitWidth;
     return wide ? const _WideWelcome() : const _SlidesWelcome();
   }
 }
@@ -225,19 +228,19 @@ class _WideWelcome extends StatelessWidget {
   Widget build(BuildContext context) {
     final fl = context.fl;
     final width = MediaQuery.sizeOf(context).width;
+    final narrow = width < 1100; // portrait tablet
 
     return Scaffold(
       body: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: (width * 0.44).clamp(380, 620)),
-            child: const _ImpactBoard(),
-          ),
+          SizedBox(width: AuthLayout.boardWidth(width), child: const _ImpactBoard()),
           Expanded(
             child: SafeArea(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(FlSpace.huge, FlSpace.huge, FlSpace.xxxl, FlSpace.xxxl),
+                padding: narrow
+                    ? const EdgeInsets.fromLTRB(FlSpace.xxl, FlSpace.xxxl, FlSpace.xl, FlSpace.xxl)
+                    : const EdgeInsets.fromLTRB(FlSpace.huge, FlSpace.huge, FlSpace.xxxl, FlSpace.xxxl),
                 child: Align(
                   alignment: Alignment.topLeft,
                   child: ConstrainedBox(
@@ -332,6 +335,7 @@ class _ImpactBoardState extends State<_ImpactBoard> {
   @override
   Widget build(BuildContext context) {
     final fl = context.fl;
+    final narrow = MediaQuery.sizeOf(context).width < 1100;
 
     // While loading, the number's space is kept so nothing jumps.
     final Widget figure = _portions != null
@@ -340,23 +344,24 @@ class _ImpactBoardState extends State<_ImpactBoard> {
             caption: 'portions delivered on campus so far',
             color: fl.chalk,
             captionColor: fl.chalkSoft,
-            fontSize: 96,
+            fontSize: narrow ? 72 : 96,
           )
         : _failed
-            ? Text('Surplus food, served before the bell.', style: context.text.displayLarge?.copyWith(color: fl.chalk))
-            : const SizedBox(height: 130);
+            ? Text('Surplus food, served before the bell.',
+                style: (narrow ? context.text.displaySmall : context.text.displayLarge)?.copyWith(color: fl.chalk))
+            : SizedBox(height: narrow ? 100 : 130);
 
     return Container(
       color: fl.board,
       height: double.infinity,
       child: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(FlSpace.xxxl),
+          padding: EdgeInsets.all(narrow ? FlSpace.xxl : FlSpace.xxxl),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const BrandMark(onDark: true, size: 34),
-              const SizedBox(height: FlSpace.huge),
+              SizedBox(height: narrow ? FlSpace.xxxl : FlSpace.huge),
               figure,
               const SizedBox(height: FlSpace.xl),
               Text(
