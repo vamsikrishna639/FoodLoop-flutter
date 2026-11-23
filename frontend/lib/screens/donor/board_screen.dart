@@ -155,9 +155,11 @@ class _BoardLine extends StatelessWidget {
     final l = listing;
     final left = l.pickupDeadline.difference(DateTime.now());
     final when = l.isClosingSoon ? 'closes in ${DeadlineClock.format(left)}' : 'until ${Fmt.time(l.pickupDeadline)}';
-    // Kept short so it fits one line on a 360px phone.
-    final shortWhen = l.isClosingSoon ? '${DeadlineClock.format(left)} left' : Fmt.time(l.pickupDeadline);
-    final note = '#${l.tokenNumber} · ${Fmt.quantity(l.quantity, l.unit)} · $shortWhen';
+    // Every line prints its pickup time the same way ("UNTIL 3:35 PM"); a
+    // line closing within the hour has that time in turmeric (8.19:1 on the
+    // board) and the screen-reader label says how long is left.
+    final note = '#${l.tokenNumber} · ${Fmt.quantity(l.quantity, l.unit)} · '.toUpperCase();
+    final until = 'UNTIL ${Fmt.time(l.pickupDeadline)}';
     // "none left" is in turmeric below, so a fully reserved line stands out.
     final leftText = l.available == 0 ? 'none left' : '${l.available} left';
 
@@ -203,7 +205,16 @@ class _BoardLine extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: FlSpace.xxs),
-              Text(note.toUpperCase(), style: fl.monoSmall.copyWith(color: fl.chalkSoft)),
+              Text.rich(
+                TextSpan(children: [
+                  TextSpan(text: note),
+                  TextSpan(
+                    text: until,
+                    style: l.isClosingSoon ? TextStyle(color: fl.turmeric, fontWeight: FontWeight.w700) : null,
+                  ),
+                ]),
+                style: fl.monoSmall.copyWith(color: fl.chalkSoft),
+              ),
             ],
           ),
         ),

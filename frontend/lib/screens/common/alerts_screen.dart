@@ -98,7 +98,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
       body = const SkeletonToken();
     } else if (items.isEmpty) {
       body = const EmptyState(
-        art: EmptyArt.slip,
+        art: EmptyArt.counter,
         title: 'Nothing to tell you yet',
         message: 'Approvals, pickups and deliveries that concern you are printed here as they happen.',
       );

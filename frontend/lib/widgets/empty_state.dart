@@ -4,7 +4,8 @@ import 'package:material_ui/material_ui.dart';
 
 import '../core/theme/tokens.dart';
 
-enum EmptyArt { plate, counter, slip, clock }
+/// [torn] is kept for errors only, so a failure never looks like an empty list.
+enum EmptyArt { plate, counter, slip, clock, torn }
 
 class EmptyState extends StatelessWidget {
   const EmptyState({
@@ -18,7 +19,7 @@ class EmptyState extends StatelessWidget {
 
   /// A failed load, with a retry button.
   const EmptyState.error({super.key, required this.message, required VoidCallback onRetry})
-      : art = EmptyArt.slip,
+      : art = EmptyArt.torn,
         title = 'That did not go through',
         actionLabel = 'Try again',
         onAction = onRetry;
@@ -65,7 +66,14 @@ class EmptyStateArt extends StatelessWidget {
     return ExcludeSemantics(
       child: CustomPaint(
         size: const Size(132, 96),
-        painter: _ArtPainter(art: art, ink: fl.ink, soft: fl.perforation, accent: fl.turmeric, fill: fl.surface),
+        painter: _ArtPainter(
+          art: art,
+          ink: fl.ink,
+          soft: fl.perforation,
+          // The error drawing's mark is chilli: something went wrong, not "empty".
+          accent: art == EmptyArt.torn ? fl.chilli : fl.turmeric,
+          fill: fl.surface,
+        ),
       ),
     );
   }
@@ -135,6 +143,33 @@ class _ArtPainter extends CustomPainter {
         canvas.drawLine(Offset(w * 0.24, h * 0.28), Offset(w * 0.6, h * 0.28), faint);
         canvas.drawLine(Offset(w * 0.24, h * 0.42), Offset(w * 0.48, h * 0.42), faint);
         canvas.drawCircle(Offset(w * 0.88, h * 0.24), 5, Paint()..color = accent);
+
+      case EmptyArt.torn:
+        // A token slip torn in two along a jagged line, the halves apart.
+        // One half: its outer edge, then the jagged tear down the middle.
+        Path half(bool left) {
+          final edge = left ? w * 0.12 : w * 0.78, top = h * 0.14, bottom = h * 0.86;
+          final p = Path()..moveTo(edge, top);
+          for (var i = 0; i <= 6; i++) {
+            p.lineTo(w * 0.45 + (i.isEven ? -5 : 5), top + (bottom - top) * i / 6);
+          }
+          return p
+            ..lineTo(edge, bottom)
+            ..close();
+        }
+
+        // The two halves pulled apart and turned slightly.
+        for (final (dx, dy, left, turn) in [(-6.0, 4.0, true, -0.06), (8.0, -3.0, false, 0.07)]) {
+          canvas.save();
+          canvas.translate(w * 0.45 + dx, h * 0.5 + dy);
+          canvas.rotate(turn);
+          canvas.translate(-w * 0.45, -h * 0.5);
+          final p = half(left);
+          canvas.drawPath(p, paper);
+          canvas.drawPath(p, line);
+          canvas.restore();
+        }
+        canvas.drawCircle(Offset(w * 0.9, h * 0.2), 5, Paint()..color = accent);
 
       case EmptyArt.clock:
         // A kitchen timer, for "waiting" screens.

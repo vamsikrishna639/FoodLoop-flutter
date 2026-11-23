@@ -3,7 +3,7 @@
 //
 //   Who collects it?
 //   8 boxes of Chicken Biryani for Ananya Rao
-//   ( ) Kiran Kumar      NSS Unit 2        1 RUN ON
+//   ( ) Kiran Kumar      NSS Unit 2        ON 1 RUN
 //   (*) Meera Nair       NSS Unit 2        FREE
 //   [ Assign Meera ]  [ Not now ]
 import 'package:material_ui/material_ui.dart';
@@ -173,7 +173,8 @@ class _VolunteerOption extends StatelessWidget {
   Widget build(BuildContext context) {
     final fl = context.fl;
     final v = volunteer;
-    final load = v.activeRuns == 0 ? 'FREE' : '${v.activeRuns} ${v.activeRuns == 1 ? 'RUN' : 'RUNS'} ON';
+    // "ON 1 RUN" (busy now) or "FREE".
+    final load = v.activeRuns == 0 ? 'FREE' : 'ON ${v.activeRuns} ${v.activeRuns == 1 ? 'RUN' : 'RUNS'}';
 
     return Padding(
       padding: const EdgeInsets.only(bottom: FlSpace.sm),

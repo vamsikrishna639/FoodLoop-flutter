@@ -29,6 +29,7 @@ import '../../widgets/empty_state.dart';
 import '../../widgets/fade_up.dart';
 import '../../widgets/filter_tag.dart';
 import '../../widgets/fl_button.dart';
+import '../../widgets/impact_number.dart';
 import '../../widgets/page_frame.dart';
 import '../../widgets/receipt_timeline.dart';
 import '../../widgets/skeleton_token.dart';
@@ -166,6 +167,12 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
       title: 'My requests',
       lede: 'Each request prints a receipt that fills in as the canteen decides and a volunteer brings it over.',
       maxWidth: 920,
+      // Only delivered food counts (rule 4), so the figure is honest. It is
+      // a stat, so it sits with the title, not under the filter tags.
+      actions: [
+        if (received != null && received > 0)
+          ImpactNumber(value: received, caption: 'Portions received', fontSize: 44, color: context.fl.leaf),
+      ],
       children: [
         Wrap(
           spacing: FlSpace.sm,
@@ -182,11 +189,6 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
             ),
           ],
         ),
-        // Only delivered food counts (rule 4), so the figure is honest.
-        if (received != null && received > 0) ...[
-          const SizedBox(height: FlSpace.xs),
-          Text('$received PORTIONS RECEIVED SO FAR', style: context.fl.monoSmall),
-        ],
         const SizedBox(height: FlSpace.xl),
         body,
       ],

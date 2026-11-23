@@ -103,7 +103,7 @@ class _ManageListingsScreenState extends State<ManageListingsScreen> {
             Padding(
               key: ValueKey(l.id),
               padding: const EdgeInsets.only(bottom: FlSpace.xl),
-              child: FadeUp(index: i, animate: animate, child: _ListingRow(listing: l, onDelete: () => _delete(l))),
+              child: FadeUp(index: i, animate: animate, child: _ListingRow(listing: l, admin: widget.admin, onDelete: () => _delete(l))),
             ),
         ],
       );
@@ -112,8 +112,8 @@ class _ManageListingsScreenState extends State<ManageListingsScreen> {
     return PageFrame(
       title: widget.admin ? 'All listings' : 'Listings',
       lede: widget.admin
-          ? 'Every token from every canteen. Remove anything that should not be on the counter.'
-          : 'Every token you have printed. Edit open ones; closed ones stay as a record.',
+          ? 'Every token from every canteen. Edit or delete anything that should not be on the counter.'
+          : 'Every token you have printed. Open ones can be edited; closed ones are kept as a record.',
       maxWidth: 600,
       // No "Post food" button in the header: the shell shows one on every
       // screen size, and the empty state offers it when the list is empty.
@@ -142,8 +142,9 @@ class _ManageListingsScreenState extends State<ManageListingsScreen> {
 
 /// A token with its actions printed underneath.
 class _ListingRow extends StatelessWidget {
-  const _ListingRow({required this.listing, required this.onDelete});
+  const _ListingRow({required this.listing, required this.admin, required this.onDelete});
   final FoodListing listing;
+  final bool admin;
   final VoidCallback onDelete;
 
   @override
@@ -155,7 +156,9 @@ class _ListingRow extends StatelessWidget {
       children: [
         TokenCard(
           title: l.title,
-          donorName: l.donorName,
+          // A donor's own tokens all come from them, so the line under the
+          // title says when each was posted instead of repeating their name.
+          donorName: admin ? l.donorName : 'Posted ${Fmt.dayTime(l.createdAt)}',
           tokenNumber: l.tokenNumber,
           quantity: l.quantity,
           reservedQuantity: l.reservedQuantity,
@@ -191,7 +194,8 @@ class _ListingRow extends StatelessWidget {
           Padding(
             padding: EdgeInsets.only(top: l.isOpen ? 0 : FlSpace.sm, left: FlSpace.xs),
             child: Text(
-              '${Fmt.quantity(l.reservedQuantity, l.unit)} promised to approved requests, so it stays on record.',
+              '${Fmt.quantity(l.reservedQuantity, l.unit)} promised to approved requests, '
+              'so this token cannot be deleted.',
               style: context.text.bodySmall,
             ),
           ),
