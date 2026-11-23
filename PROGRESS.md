@@ -67,12 +67,12 @@ files (clean). The UI has **not** been run or screenshotted yet.
 | Item | Status |
 |---|---|
 | Postman collection with negative tests (over-allocation, wrong role, invalid transition), 80 requests | **Done.** Passed 2026-11-23 on a fresh seed: 80 requests, 231 assertions, 0 failures. `backend/postman/FoodLoop.postman_collection.json`, `npm run test:api` (needs the backend running) |
-| Playwright screenshots at 360, 768, 1440 px, paper and chalkboard modes | **Captured, not fixed.** `docs/screenshots/`, `docs/FINDINGS.md` |
+| Playwright screenshots at 360, 768, 1440 px, paper and chalkboard modes | **Captured.** `docs/screenshots/`, `docs/FINDINGS.md`. High findings F1–F3 fixed; Medium and Low remain |
 | Dark mode visual check | **Done** as part of the screenshots (see F2 in `docs/FINDINGS.md`) |
 | `/impeccable audit` and `/impeccable polish` | **Missing** (the only critique file in `.impeccable/critique/` is about an old JSX page, not this app) |
 | review-animations | **Missing** |
-| Root `README.md` (setup, test logins, demo script) | **Missing** (the root README is the one line from the GitHub repo) |
-| `frontend/README.md` and pubspec `description` | Still the Flutter defaults ("A new Flutter project.") |
+| Root `README.md` (setup, test logins, demo script) | **Done** |
+| `frontend/README.md` and pubspec `description` | **Done** |
 
 ---
 
@@ -139,25 +139,36 @@ These were checked by calculation only. The screenshot pass (plan step 3) is the
 
 ---
 
-## 4. Remaining plan (in this order)
+## 4. Remaining plan
 
-1. ~~Backend check~~ (done: all pass).
-2. ~~Fix contrast bugs 1–5~~ (done).
-3. **Screenshots:** captured 2026-11-23, 194 PNGs in `docs/screenshots/`, findings in `docs/FINDINGS.md` (F1-F36, nothing fixed yet; waiting for the user's review). Notes for re-running: re-seed first (`npm run test:api` adds test data), then `flutter build web` (or `flutter run -d web-server`), start
-   the backend, and use the Playwright MCP to screenshot every screen at 360, 768
-   and 1440 px in paper and chalkboard modes, logged in as each role. Fix overflow,
-   spacing and contrast. **Pause and show the user the results before fixing.**
-   Commit and push.
-4. **`/impeccable audit` and `/impeccable polish`** across the whole app; fix the
-   findings. Commit and push.
-5. **review-animations** on the app; fix the findings. Commit and push.
-6. **Root `README.md`:** setup for MongoDB, the backend (`.env` from
-   `.env.example`, `npm install`, `npm run seed`, `npm run dev`) and Flutter
-   (`flutter pub get`, `flutter run -d chrome`, the `API_BASE_URL` override,
-   `10.0.2.2` on the Android emulator); the test logins; a demo script for one full
-   donor → recipient → volunteer → delivered flow. Commit and push.
-7. **Tidy** `frontend/README.md` and the `description` in `frontend/pubspec.yaml`.
-   Commit and push.
+Done on 2026-11-23:
+
+1. ~~Backend check~~: `npm run test:api` passes (80 requests, 231 assertions, 0 failures).
+2. ~~Contrast bugs 1–5~~.
+3. ~~Screenshot pass~~: 194 PNGs in `docs/screenshots/`, findings F1–F36 in `docs/FINDINGS.md`.
+4. ~~High findings~~:
+   - F1: the "TOKEN" caption was clipping.
+   - F2: the board now uses the green-slate `#2F3B34` token in chalkboard mode (option B).
+   - F3: seed claim and notification times now agree.
+5. ~~Root `README.md`~~ and ~~frontend README / pubspec description~~.
+6. Final check: `flutter analyze` is clean and `npm run test:api` passes. The database was re-seeded afterwards.
+
+**Remaining** (not started; wait for the user's go-ahead):
+
+- **Medium findings in `docs/FINDINGS.md`:**
+  - F4–F8: contrast and accessibility.
+  - F9–F17: layout and spacing.
+  - F18–F23: generic or off-concept screens.
+- **Low findings:** F24–F36 (copy, data and consistency).
+- **`/impeccable audit` and `/impeccable polish`** across the whole app.
+- **review-animations** on the app.
+- **Android:** the Gradle/Java build error has not been looked at.
+
+How to re-check screens: re-seed first, because `npm run test:api` adds test data
+and changes user IDs, so saved JWTs stop working. Then run the debug server with
+`flutter run -d web-server --web-port 8081` (debug builds draw overflow stripes)
+and use the Playwright MCP. The capture scripts are in `.playwright-mcp/`, which
+is git-ignored because the scripts contain local JWTs.
 
 ---
 
@@ -183,12 +194,11 @@ These were checked by calculation only. The screenshot pass (plan step 3) is the
   | Volunteer | meera@foodloop.test | NSS Unit 2 |
   | Pending recipient | rohit@foodloop.test | Shows the waiting screen |
 
-- **MCP servers:** Playwright (`npx @playwright/mcp@latest`) and Dart
-  (`dart mcp-server`) are configured in `.mcp.json` (project scope). A fresh
-  session must approve them. At the end of this session both timed out while
-  connecting, so check they start (`npx @playwright/mcp@latest`, `dart mcp-server`)
-  if they fail again. Since `ae52c9b` Playwright runs through `cmd /c npx -y`,
-  and `.claude/settings.json` sets `MCP_TIMEOUT` to 120000. Both connected after that.
+- **MCP servers:** Playwright (`cmd /c npx -y @playwright/mcp@latest`, since
+  `ae52c9b`) and Dart (`dart mcp-server`) are configured in `.mcp.json`
+  (project scope), and `.claude/settings.json` sets `MCP_TIMEOUT` to 120000.
+  A fresh session must approve them. Both connected on 2026-11-23. If one times
+  out, start its command by hand in a terminal to see the real error.
 - **Android:** VS Code shows a Gradle/Java build error. It is an Android build
   issue and has not been looked at. Web is the target for screenshots.
 - **git push:** Git Credential Manager handles GitHub sign-in. One push in this
