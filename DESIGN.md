@@ -87,17 +87,24 @@ The non-veg marker uses `chilliDeep`.
 | `slipDone` | `#8A5A0B` | DONE mark on the (light) slip snackbar (the paper `turmericDeep`) |
 | `slipError` | `#B93A21` | NOT DONE mark on the slip snackbar (the paper `chilliDeep`) |
 
-### 1.3 Chalkboard block (same in both themes)
+### 1.3 Chalkboard block (always dark)
 
-The donor's "Today's Surplus" block and the desktop sidebar are always dark.
+The donor's "Today's Surplus" block, the desktop sidebar, the tablet rail and
+the login/onboarding panel are always dark. In paper mode the board is a deep
+slate. In chalkboard mode the page itself is slate, so the board switches to a
+lighter **green slate**: otherwise it would sit at 1.06:1 against the page and
+disappear (finding F2).
 
-| Token | Hex |
-|---|---|
-| `board` | `#232927` |
-| `boardFrame` | `#3A2E22` (wooden frame edge) |
-| `chalk` | `#ECE8DF` |
-| `chalkSoft` | `#A9A397` |
-| `chalkLine` | `#3A423E` |
+| Token | Paper | Chalkboard |
+|---|---|---|
+| `board` | `#232927` | `#2F3B34` (green slate, 1.35:1 against the `#1F2422` page) |
+| `boardFrame` | `#3A2E22` (wooden frame edge) | same |
+| `chalk` | `#ECE8DF` | same |
+| `chalkSoft` | `#A9A397` | same |
+| `chalkLine` | `#3A423E` | same |
+
+`board` lives in each theme's `_Palette` in `app_theme.dart`; the other four are
+shared constants.
 
 ### 1.4 Contrast findings (WCAG AA)
 
@@ -116,6 +123,10 @@ Measured ratios; text needs 4.5:1 and non-text 3:1.
 | line / perforation on paper | 1.23 / 1.53 | decorative only, never the sole boundary of a control |
 | controlBorder on paper | 3.36 | pass for control outlines |
 | chalk on slate; inkSoft on dark surface | 12.88; 5.60 | pass |
+| On the paper-mode board `#232927`: chalk / chalkSoft / turmeric | 12.11 / 5.90 / 8.19 | pass |
+| On the chalkboard-mode board `#2F3B34`: chalk / chalkSoft / turmeric | 9.56 / 4.66 / 6.47 | pass (chalkSoft is the limit: a lighter board would drop it below 4.5) |
+| Selected sidebar label (`board` on `chalk`), paper / chalkboard | 12.11 / 9.56 | pass |
+| Chalkboard-mode board vs page (non-text surface) | 1.35 (was 1.06) | the board now reads as a separate surface |
 | dark chilli / leaf / turmeric on dark surface | 4.51 / 6.32 / 7.77 | pass |
 | ink on dark chilli (button label) | 5.51 | pass |
 | Sidebar / rail "Post food": `onChilli` on `chilliDeep` (paper / chalkboard; 90% hover fill on the board) | 5.37 / 5.51 (6.01 / 4.78) | pass |

@@ -86,7 +86,10 @@ polish.
   practice it no longer stands out.
 - To fix it, the board needs its own treatment in dark mode, such as a lighter
   slate, a stronger frame, or chalk dust.
-- **Two options, waiting for a choice** (not applied to the code):
+- **Fixed with option B.** `board` is now a per-theme palette token:
+  `#232927` on paper, `#2F3B34` green slate on the chalkboard page. Checked at
+  360 and 1440 on the donor board, login and onboarding in both modes.
+- The two options that were compared:
   - **A** (`docs/screenshots/f2-option-a.png`): keep the board colour; a
     lighter wooden frame (`#6B5236`) and a 1.5px chalk edge (`#6A736E`, 3.22:1
     against the page) on the board, sidebar, rail and login/onboarding panel.

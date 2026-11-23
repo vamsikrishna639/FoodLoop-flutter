@@ -135,7 +135,9 @@ class FoodLoopTokens extends ThemeExtension<FoodLoopTokens> {
   final Color slipDone; // DONE mark
   final Color slipError; // NOT DONE mark
 
-  // Chalkboard block: dark in both themes
+  // Chalkboard block: dark in both themes. The board is slate #232927 on
+  // paper and a lighter green slate #2F3B34 on the chalkboard page, so it
+  // never blends into the background.
   final Color board;
   final Color boardFrame;
   final Color chalk;

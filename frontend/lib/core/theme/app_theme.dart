@@ -28,6 +28,8 @@ abstract final class AppTheme {
     turmeric: Color(0xFFE8A33D),
     turmericDeep: Color(0xFF8A5A0B),
     stampGrey: Color(0xFF6B6255),
+    // The menu board: deep slate, standing out against warm paper.
+    board: Color(0xFF232927),
   );
 
   static const _chalkColors = _Palette(
@@ -47,10 +49,14 @@ abstract final class AppTheme {
     turmeric: Color(0xFFF2B65A),
     turmericDeep: Color(0xFFF2B65A),
     stampGrey: Color(0xFF8E958F),
+    // A green-slate board, lighter than the slate page (1.35:1) so the board
+    // still reads as its own surface. It is about the lightest slate that keeps
+    // chalkSoft text at 4.5:1 (4.66); chalk is 9.56, turmeric 6.47.
+    board: Color(0xFF2F3B34),
   );
 
-  // The chalkboard block looks the same in both themes.
-  static const _board = Color(0xFF232927);
+  // The chalkboard block's frame and chalk are the same in both themes; the
+  // board colour itself is per theme (in each _Palette).
   static const _boardFrame = Color(0xFF3A2E22);
   static const _chalk = Color(0xFFECE8DF);
   static const _chalkSoft = Color(0xFFA9A397);
@@ -121,7 +127,7 @@ abstract final class AppTheme {
       // Chalkboard (light slip): paper turmericDeep 4.84, paper chilliDeep 4.65.
       slipDone: isPaper ? p.turmeric : _paperColors.turmericDeep,
       slipError: isPaper ? _chalkColors.chilli : _paperColors.chilliDeep,
-      board: _board,
+      board: p.board,
       boardFrame: _boardFrame,
       chalk: _chalk,
       chalkSoft: _chalkSoft,
@@ -301,8 +307,10 @@ class _Palette {
     required this.turmeric,
     required this.turmericDeep,
     required this.stampGrey,
+    required this.board,
   });
 
   final Color paper, surface, surfaceSunken, ink, inkSoft, line, perforation, controlBorder;
   final Color chilli, chilliDeep, onChilli, leaf, onLeaf, turmeric, turmericDeep, stampGrey;
+  final Color board; // the always-dark menu board (sidebar, Today's Surplus, auth panel)
 }
