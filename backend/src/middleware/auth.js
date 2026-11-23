@@ -1,4 +1,4 @@
-// Authentication and role checks used by every protected route.
+// Authentication and role checks used  every protected route.
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const { ApiError, asyncHandler } = require('../utils/apiResponse');
