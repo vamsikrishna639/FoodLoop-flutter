@@ -145,11 +145,17 @@ class _ImpactBlock extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text('WEEKLY REPORT · PRINTED ${Fmt.time(DateTime.now())}', style: fl.monoSmall),
-                const SizedBox(height: FlSpace.sm),
-                DottedLine(color: fl.controlBorder, dot: 4, gap: 3, height: 1),
-                const SizedBox(height: FlSpace.lg),
                 _layout(big, sentence, chart),
+                // The report's print line sits at the foot, like a till
+                // receipt's, so nothing labels the big figure from above.
+                const SizedBox(height: FlSpace.xl),
+                DottedLine(color: fl.controlBorder, dot: 4, gap: 3, height: 1),
+                const SizedBox(height: FlSpace.md),
+                Text(
+                  'WEEKLY REPORT · PRINTED ${Fmt.time(DateTime.now())}',
+                  textAlign: TextAlign.center,
+                  style: fl.monoSmall,
+                ),
               ],
             ),
           ),

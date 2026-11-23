@@ -76,7 +76,21 @@ class _PressableState extends State<Pressable> {
                     ? Border.all(color: widget.onBoard ? fl.turmeric : fl.ink, width: widget.onBoard ? 3 : 2)
                     : null,
               ),
-              child: widget.builder(context, _hovered && enabled),
+              // A selected control is often filled with the ring's own colour
+              // (an ink tag, the chalk label on the board), which would hide
+              // the ring. A thin keyline in the opposite colour just inside
+              // it keeps the focus visible.
+              // (Always present, so the child's widget tree never changes shape.)
+              child: DecoratedBox(
+                position: DecorationPosition.foreground,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(widget.focusRadius),
+                  border: _focused && widget.selected == true
+                      ? Border.all(color: widget.onBoard ? fl.board : fl.paper, width: widget.onBoard ? 5 : 4)
+                      : null,
+                ),
+                child: widget.builder(context, _hovered && enabled),
+              ),
             ),
           ),
         ),

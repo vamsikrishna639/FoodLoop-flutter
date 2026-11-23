@@ -10,6 +10,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../widgets/fl_button.dart';
 import '../../widgets/page_frame.dart';
+import '../../widgets/pressable.dart';
 import '../../widgets/receipt_timeline.dart';
 import '../../widgets/status_stamp.dart';
 
@@ -48,11 +49,13 @@ class ProfileScreen extends StatelessWidget {
 
         Text('Appearance', style: context.text.headlineSmall),
         const SizedBox(height: FlSpace.sm),
-        // The whole row toggles the switch, giving a large tap target.
-        MergeSemantics(
-          child: InkWell(
-            borderRadius: BorderRadius.circular(FlRadius.control),
-            onTap: () => theme.setChalkboard(!theme.isChalkboard),
+        // The whole row toggles the switch, giving a large tap target, with
+        // the app's own focus ring (Pressable) instead of a faint tint.
+        Pressable(
+          onTap: () => theme.setChalkboard(!theme.isChalkboard),
+          focusRadius: FlRadius.control,
+          semanticLabel: 'Chalkboard mode, ${theme.isChalkboard ? 'on' : 'off'}',
+          builder: (context, _) => ExcludeSemantics(
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: FlSpace.sm),
               child: Row(

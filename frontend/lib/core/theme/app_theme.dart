@@ -239,8 +239,10 @@ abstract final class AppTheme {
                 ? textTheme.labelLarge?.copyWith(decoration: TextDecoration.underline)
                 : textTheme.labelLarge,
           ),
-          overlayColor: WidgetStateProperty.resolveWith(
-            (s) => s.contains(WidgetState.focused) ? p.ink.withValues(alpha: 0.08) : Colors.transparent,
+          overlayColor: const WidgetStatePropertyAll(Colors.transparent),
+          // Keyboard focus gets the app's ring: 2px ink on the button's edge.
+          side: WidgetStateProperty.resolveWith(
+            (s) => s.contains(WidgetState.focused) ? BorderSide(color: p.ink, width: 2) : null,
           ),
         ),
       ),

@@ -250,9 +250,9 @@ class _ListingFormState extends State<ListingForm> {
             const SizedBox(height: FlSpace.lg),
             if (_formError != null) FormNotice(message: _formError!),
 
-            // The form is written like a kitchen docket: three numbered
+            // The form is written like a kitchen docket: three ruled
             // parts, then a preview of the line as it will read on the board.
-            const _DocketPart(1, 'What'),
+            const _DocketPart('What', first: true),
             LabeledField(
               label: 'What is it?',
               child: TextFormField(
@@ -300,7 +300,7 @@ class _ListingFormState extends State<ListingForm> {
               ),
             ),
 
-            const _DocketPart(2, 'How much'),
+            const _DocketPart('How much'),
             // Quantity and unit side by side.
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -359,7 +359,7 @@ class _ListingFormState extends State<ListingForm> {
                 ),
               ),
 
-            const _DocketPart(3, 'Where and when'),
+            const _DocketPart('Where and when'),
             LabeledField(
               label: 'Collect from',
               child: TextFormField(
@@ -492,27 +492,25 @@ class _ListingFormState extends State<ListingForm> {
   }
 }
 
-/// A numbered part of the docket: "02  HOW MUCH ...........".
+/// One part of the docket: "HOW MUCH ..........................".
+/// A printed rule, not a numbered step: the parts can be filled in any order.
 class _DocketPart extends StatelessWidget {
-  const _DocketPart(this.number, this.label);
-  final int number;
+  const _DocketPart(this.label, {this.first = false});
   final String label;
+  final bool first;
 
   @override
   Widget build(BuildContext context) {
     final fl = context.fl;
     return Padding(
-      padding: EdgeInsets.only(top: number == 1 ? 0 : FlSpace.md, bottom: FlSpace.lg),
+      padding: EdgeInsets.only(top: first ? 0 : FlSpace.md, bottom: FlSpace.lg),
       child: Semantics(
         header: true,
-        label: 'Part $number: $label',
+        label: label,
         child: ExcludeSemantics(
           child: Row(
             children: [
-              Text(number.toString().padLeft(2, '0'),
-                  style: fl.monoSmall.copyWith(color: fl.ink, fontWeight: FontWeight.w700)),
-              const SizedBox(width: FlSpace.sm),
-              Text(label.toUpperCase(), style: fl.monoSmall.copyWith(color: fl.ink)),
+              Text(label.toUpperCase(), style: fl.monoSmall.copyWith(color: fl.ink, fontWeight: FontWeight.w700)),
               const SizedBox(width: FlSpace.sm),
               Expanded(child: DottedLine(color: fl.controlBorder, dot: 2, gap: 4)),
             ],
