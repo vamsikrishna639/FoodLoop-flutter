@@ -11,7 +11,7 @@ frontend (Android and Web). It is implemented in:
 | File | What it holds |
 |---|---|
 | `frontend/lib/core/theme/tokens.dart` | `FlSpace`, `FlRadius`, `FlMotion` constants and the `FoodLoopTokens` `ThemeExtension` (custom colours and text styles) |
-| `frontend/lib/core/theme/app_theme.dart` | The two `ThemeData` objects (`AppTheme.paper`, `AppTheme.chalkboard`). The only file with raw hex colours |
+| `frontend/lib/core/theme/app_theme.dart` | The two `ThemeData` objects (`AppTheme.paper`, `AppTheme.chalkboard`). The only file with raw palette colours (the one other `Color(0x…)` use is the black, alpha-only ink mask inside `StatusStamp`, which carries no hue) |
 | `frontend/lib/core/responsive/breakpoints.dart` | Breakpoints, gutters, max content width |
 | `frontend/lib/widgets/` | The signature components (section 6) |
 
@@ -157,7 +157,7 @@ impact number (72–96) is what makes screens look editorial instead of uniform.
 
 | Style | Where it lives | Font | Size / line height | Weight | Tracking | Use |
 |---|---|---|---|---|---|---|
-| `impact` | `context.fl.impact` | Bricolage | 72 (scale up to 88 tablet / 96 desktop in the widget) / 0.95 | 800 | -2.0 | ImpactNumber |
+| `impact` | `context.fl.impact` | Bricolage | 72 default / 0.95; the screen passes its own size (96 admin feature block, 64 volunteer, 44 small figures) | 800 | -2.0 | ImpactNumber |
 | `displayLarge` | `TextTheme` | Bricolage | 56 / 1.0 | 800 | -1.5 | Onboarding headline |
 | `displayMedium` | `TextTheme` | Bricolage | 44 / 1.05 | 700 | -1.0 | Screen hero titles (desktop) |
 | `displaySmall` | `TextTheme` | Bricolage | 36 / 1.1 | 700 | -0.8 | Screen titles (mobile) |
@@ -210,8 +210,8 @@ UIs look templated:
 | Level | Treatment (`BoxDecoration`) | Use |
 |---|---|---|
 | 0 flat | 1px `line` border, no shadow | Slips, receipts, tables at rest |
-| 1 lifted | border plus a short soft `BoxShadow` (offset 0,4; blur 10; `ink` at 10%) | Hovered slip (web and desktop), raised nav action |
-| 2 floating | `BoxShadow` (offset 0,12; blur 32; `ink` at 14%) | Dialogs, sheets, snackbar slips |
+| 1 lifted | border plus a short soft shadow offset 0,4 in `ink` at 10–16% (slips paint it with `MaskFilter.blur` sigma 6 so it follows the notches; the raised nav action uses a `BoxShadow` blur 10 at 16%) | Hovered or selected slip, raised nav action |
+| 2 floating | Snackbar slip: `BoxShadow` offset 0,10, blur 24, `ink` at 18%. Dialogs and bottom sheets use Material's own elevation with the `ink` shadow colour from the `ColorScheme` | Dialogs, sheets, snackbar slips |
 
 No glassmorphism (no `BackdropFilter` blur), no glows, no gradients except the
 faint chalk dust on the board.
@@ -225,10 +225,10 @@ to a change. If it does none of these it is removed.
 
 | Token (`FlMotion`) | Value | Use |
 |---|---|---|
-| `fast` | 120ms | Press feedback, hover |
-| `base` | 200ms | Most transitions: fades, chip selection |
-| `slow` | 280ms | Page and Hero transitions, sheets |
-| `stagger` | 40ms per item, capped at 8 items | First-load list entrance only (`FadeUp`) |
+| `fast` | 120ms | Press feedback, hover, chip colour, side-panel swap, page fade back |
+| `base` | 200ms | Most transitions: page fade in (and the Hero that rides on it), `FadeUp` items, `FadeIn` |
+| `slow` | 280ms | Onboarding slide change (its only use) |
+| `stagger` | 40ms per item; items after the 6th start together (`FadeUp.maxStaggered`) | First-load list entrance only (`FadeUp`: 200ms fade plus an 8px rise) |
 | `count` | 900ms | ImpactNumber count-up |
 | `stampDrop` | 420ms | The approve stamp (signature moment, used once) |
 | `easeOut` | `Cubic(0.23, 1, 0.32, 1)` | Default: things arriving |
@@ -260,8 +260,12 @@ to a change. If it does none of these it is removed.
 - **Frequency:** things tapped many times a day (navigation tabs, radio choices)
   change instantly; the page cross-fade is their only motion. Filter chips change
   colour only.
-- **Page transitions:** `FadeForwardsPageTransitionsBuilder` on Android; custom
-  `PageRouteBuilder` only for the Hero detail page.
+- **Page transitions:** every `go_router` page, including the phone listing
+  detail, is a `CustomTransitionPage` with an opacity-only cross-fade (200ms in,
+  120ms back, `easeOut`). Because it only fades, it stays under reduced motion.
+  The phone Hero flies on top of that route. The theme also sets
+  `FadeForwardsPageTransitionsBuilder` for Android, which only affects routes
+  pushed outside `go_router`.
 - Use `FlMotion.topLeft` / `topRight` as the `layoutBuilder` of an
   `AnimatedSwitcher` so a narrower new child does not start in the centre and
   jump.
@@ -277,9 +281,9 @@ Every interactive component defines all of these states.
 | Default | As specified |
 | Hover (web, desktop) | Slip lifts to elevation 1 and the outline darkens to `controlBorder`; buttons darken about 10%; cursor becomes `SystemMouseCursors.click` |
 | Pressed | `Pressable` scales to 0.98 on slips and buttons (transform only, off under reduced motion) |
-| Focused | 2px `ink` outline with a 2px offset (chalk on the board). Inputs show a 2px ink edge instead. Never removed; keyboard users must see it |
+| Focused | `Pressable` draws a 2px `ink` ring on the element's own edge (no offset), in front of the content so it is never clipped. On the dark board (sidebar, rail) the ring is 3px `turmeric`. Inputs show a 2px ink edge instead. Never removed; keyboard users must see it |
 | Disabled | Buttons become a sunken paper slot (`surfaceSunken` fill, `controlBorder` outline, `inkSoft` label), never a faded fill. The Admin role slip is 60% opacity with "Not here" printed on it |
-| Loading | Button keeps its width; the label is replaced by a small mono "..." ticker and the button is disabled |
+| Loading | Button keeps its size and colour and is disabled; the label is replaced by a short loading label whose three dots print one by one ("Signing in.", "..", "..."), in the button's own font. The dots stay still under reduced motion |
 | Error | `chilliDeep` border, a small mono message in `chilliDeep` below the field with a warning icon, announced by a semantic label |
 | Selected | Ink fill with paper text for chips; a stamp-style check for role slips |
 
@@ -291,9 +295,12 @@ Minimum tap target is 48×48 logical pixels (`minimumSize` in the button themes,
 - **Accent (chilli):** `chilliDeep` fill, `onChilli` label. Reserved for the
   single most important action on a screen (Request food, Post food).
 - **Outline:** 1.5px `ink` border, ink label.
-- **Text:** ink label with an underline on hover.
-- Height 48 (52 on mobile primary actions), radius `FlRadius.control`, label
-  `labelLarge`.
+- `FlButton` has exactly these three variants. Low-emphasis actions use a plain
+  Material `TextButton`, themed with an ink label, a 48×48 minimum and no
+  underline.
+- Minimum height 48 for every button (`minimumSize` in the button themes), radius
+  `FlRadius.control`, label `labelLarge`. Tappable pickers in forms (the
+  date-time fields) are 52 tall.
 
 ### Inputs
 `InputDecorationTheme`: sunken fill `surfaceSunken`, 1px `controlBorder`, radius
@@ -315,71 +322,106 @@ The food listing. A slip of `surface` paper with:
   arcs of radius `FlRadius.notch`) clips the slip, and a matching
   `CustomPainter` draws the 1px outline so the outline follows the notches. The
   notches sit on the perforation line.
-- **Top:** veg marker, title (`headlineSmall`), donor name, StatusStamp in the
-  top-right corner.
+- **Top:** a 68px ticket block on the left; beside it the veg marker (with its
+  label), the StatusStamp in the top-right corner (it wraps below the marker on
+  very narrow cards), the title (`headlineSmall`, max 2 lines) and the donor name.
 - **Perforation:** a dotted line in `perforation`.
 - **Stub:** `surfaceSunken`, with the token number (`monoLarge`, e.g. `#FL-0042`),
-  PortionMeter and DeadlineClock.
-- **With no image** (the normal case): the top section shows a "ticket block", a
-  food-type tinted panel with a large mono initial of the dish. A photo is the
-  exception, so an empty `imageUrl` never leaves a hole.
-- A compact variant drops the ticket block for dense lists.
+  PortionMeter and DeadlineClock. Completed and expired tokens show no clock (the
+  stamp already says so) and print their title in `inkSoft`. The stub is 84px tall
+  and grows with the system text size (up to 132), so the notches always sit on
+  the perforation.
+- **Ticket block, with no image** (the normal case): a printed square tinted with
+  the food-type colour (`leaf`, `chilliDeep` or `turmericDeep` at 12%, with a 45%
+  border), a small "TOKEN" caption rule, and the dish's two initials ("CB" for
+  Chicken Biryani) in Bricolage `headlineMedium`. A photo replaces it when
+  `imageUrl` is set; a slow or broken image falls back to the printed block.
+- **Selected** (the token open in the side panel): an `ink` outline and the lifted
+  shadow.
 - Wrapped in `Hero` (tag from the listing id) for the phone detail transition.
+  There is no Hero under reduced motion.
 
 ### PortionMeter (`portion_meter.dart`)
-A row of small plate icons that fill as portions are reserved. Up to 12 portions
-are drawn as icons; above that it collapses to mono text "18 / 20 left" with a
-thin segmented bar. Always carries a `Semantics` label such as "18 of 20 plates
-left".
+A row of small 12px icons, one per portion: circles (plates) when the unit is
+plates, rounded squares (boxes) for boxes and packets. A free portion is an
+outline; a reserved one is inked in solid. Up to 12 portions are drawn as icons.
+Above 12, and always for `kg` (a weight, not a count), it shows a 10-segment bar
+instead. The mono line "18 / 20 PLATES LEFT" is printed under the icons or the
+bar in every case. It always carries a `Semantics` label such as "18 of 20 plates
+left". An `onDark` variant draws in chalk for the chalkboard.
 
 ### DeadlineClock (`deadline_clock.dart`)
-A circular ring (`CustomPainter`) like a kitchen timer, with the time left in
-mono beside or inside it. The ring spans up to 6 hours. Ink by default, turmeric
-under 1 hour, chilli under 15 minutes, and a crossed-out EXPIRED stamp after.
-Updates once a minute (once a second in the last minute).
+A 40px circular ring (`CustomPainter`) like a kitchen timer, with a knob tick at
+12 o'clock. Beside it are the time left in mono ("3h 05m", "45m", "50s") and a
+one-word caption under it: LEFT, CLOSING (under 1 hour) or HURRY (under 15
+minutes). The ring is full at 6 hours or more and never drops below a 4% sliver.
+Ink by default, turmeric under 1 hour, chilli under 15 minutes (the text uses
+`turmericDeep` / `chilliDeep` on paper), and a crossed-out EXPIRED stamp after.
+It updates every 20 seconds, every second in the last minute, and stops once
+expired. An `onDark` variant draws in chalk.
 
 ### StatusStamp (`status_stamp.dart`)
-Uppercase mono text in a rounded rectangle border (`FlRadius.stamp`), rotated -6°
-(`Transform.rotate`), with slightly uneven opacity. Colours: AVAILABLE `leaf`,
+Uppercase mono text (`fl.stamp`) in a 2px rounded rectangle border
+(`FlRadius.stamp`), rotated -6° by default (`Transform.rotate`; the angle and a
+`scale` can be passed). The uneven ink is a `ShaderMask` with a diagonal
+alpha-only gradient (100% / 82% / 100% / 77% / 95%). Colours: AVAILABLE `leaf`,
 RESERVED `turmericDeep`, PENDING `inkSoft`, APPROVED `leaf`, REJECTED
 `chilliDeep`, CANCELLED `stampGrey`, ASSIGNED `ink`, PICKED UP `ink`, DELIVERED
-`leaf` with a double border, EXPIRED `stampGrey` crossed out.
+`leaf` with a double border, COMPLETED `leaf` (a listing that has been fully
+handed out), EXPIRED `stampGrey` crossed out with a diagonal line.
+`StatusStamp.custom` prints any word as a stamp (for example the role stamp
+"DONOR" in Profile).
 
 ### StampDrop (`stamp_drop.dart`)
 The signature animation wrapper (section 4). Wraps a StatusStamp. Used only for
 claim approval.
 
 ### ReceiptTimeline (`receipt_timeline.dart`)
-A printed receipt: zigzag torn top and bottom edges (a `CustomClipper` with a
-12px tooth), mono text, dotted leaders between label and time ("Requested
-........ 12:40 PM"). Steps that have not happened yet are printed in `inkSoft`
-with "--:--".
+A printed receipt on `surface`: zigzag torn top and bottom edges (a
+`CustomClipper`; each tooth is about 12px wide and 6px deep) with a 1px `line`
+outline painted along the zigzag. At the top are the title (`titleLarge`) and a
+mono line with the receipt type and token number ("REQUEST RECEIPT  #FL-0003"),
+with an optional StatusStamp beside the title so a long title wraps instead of
+running under it. Then come a dashed rule and the rows: mono text, with dotted
+leaders between label and time ("Requested ........ 12:40 PM"). The current step
+can be bold. Steps that have not happened yet are printed in `inkSoft` with
+"--:--". An optional uppercase footer sits under a second rule.
 
 ### Chalkboard (`chalkboard.dart`)
-Always-dark `board` surface with a thin wooden frame (`boardFrame`), a
-chalk-underlined heading (any date or count sits beside or below the heading,
-never as a label above it), and items listed like a menu board: dish name,
-dotted leader, quantity in mono.
+Always-dark `board` surface (radius `sharp`) with a 6px wooden frame
+(`boardFrame`). The heading is in `headlineMedium` chalk, with an optional
+trailing action beside it and a hand-drawn wavy underline in `turmeric` (160px)
+under it. An optional uppercase mono caption (a date or a count) sits below the
+underline, never as a label above the heading. Items are listed like a menu
+board (`ChalkItem`): the dish name in `titleLarge` chalk (up to 62% of the line,
+with an optional small note under it), a dotted chalk leader, and the quantity in
+bold mono at the right edge.
 
 ### ImpactNumber (`impact_number.dart`)
 A very large Bricolage number with a small uppercase mono caption. Counts up from
 0 (`TweenAnimationBuilder`, `FlMotion.count`) the first time a figure appears in a
 session; on later visits it starts from the value it last showed, so it stands
-still, or counts only what was added. No count-up under reduced motion.
+still, or counts only what was added. No count-up under reduced motion. Numbers
+use Indian digit grouping (`en_IN`: 1,24,000), can carry a smaller suffix (" kg"),
+and shrink to fit (`FittedBox`) rather than overflow on narrow screens.
 
 ### VegMarker (`veg_marker.dart`)
 The Indian food marking: a green square outline with a green dot (veg), a red
-square outline with a red triangle (non-veg), and a split marker for mixed. Has a
-`Semantics` label.
+square outline with a red (`chilliDeep`) triangle (non-veg). Mixed shows both
+markers side by side. It can print its label ("VEG", in `monoSmall`) beside the
+marker, and has a `Semantics` label ("Veg food").
 
 ### Slip snackbar (`slip_snackbar.dart`)
 Feedback appears as a small printed slip: `ink` background, mono text, and a small
-boxed word (DONE / NOT DONE) so the result never depends on colour. Shown through
-a `SnackBar` with a transparent background (set in the theme).
+boxed word (DONE, NOT DONE, or NOTE for plain information) so the result never
+depends on colour. Shown through a floating `SnackBar` with a transparent
+background (set in the theme) for 4 seconds; a fixed 420px wide on screens 600px
+and wider. It is a live region, so screen readers announce it.
 
 ### SkeletonToken (`skeleton_token.dart`)
-A loader in the exact shape of a TokenCard with a slow opacity pulse (static when
-reduced motion is on). No spinners for content.
+A loader in the exact shape of a TokenCard (same notches and stub height) with a
+slow opacity pulse (1.1s, 45% to 100%, static when reduced motion is on). No
+spinners for content.
 
 ### EmptyState (`empty_state.dart`)
 A simple illustration drawn with Flutter shapes (`CustomPainter` or icons: an
@@ -404,7 +446,7 @@ One `ResponsiveShell` (`responsive_shell.dart`), three breakpoints, mobile first
 |---|---|---|---|
 | `mobile` | `< 600` | Bottom bar (68px) with a raised centre action ("Post food" for donor, "Browse" for recipient) | One column; forms are bottom sheets (`showModalBottomSheet`) |
 | `tablet` | `600–1024` | Dark navigation rail (92px), icons over labels | Two columns; detail opens as a side panel next to the list |
-| `desktop` | `> 1024` | Menu-board sidebar (248): logo, nav, user chip | Main area plus a right activity rail (304); max content width 1320 (`Breakpoints.maxContent`), left-aligned; dialogs (`showDialog`) instead of sheets |
+| `desktop` | `> 1024` | Menu-board sidebar (248): logo, nav, user chip | Main area plus a right activity rail (304); sidebar, content and rail together are at most 1320 wide (`Breakpoints.maxContent`), left-aligned; dialogs (`showDialog`) instead of sheets |
 
 Rules:
 - Use `MediaQuery.sizeOf` or `LayoutBuilder`, never `MediaQuery.of`, so screens
@@ -413,7 +455,9 @@ Rules:
 - Use `SafeArea`; the bottom bar respects the system inset.
 - No overflow errors at 360, 768 or 1440 px wide. Prefer `Wrap`, `Flexible`,
   `Expanded` and `maxLines` over fixed widths.
-- Dialogs on desktop, bottom sheets on mobile (one helper chooses by size).
+- Bottom sheets on mobile, dialogs on tablet and desktop. Each form's opener
+  (the listing form, the volunteer-assignment form) checks `context.isMobile` to
+  choose.
 
 Screens differ on purpose:
 - **Recipient feed ("Today's Counter")** — a counter of token slips under a large title.
