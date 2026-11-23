@@ -86,6 +86,47 @@ The API address is in `frontend/lib/core/config.dart`:
 The theme toggle (paper / chalkboard) is in Profile. A component gallery of
 every signature widget is at `/#/gallery`.
 
+### Low-memory demo run
+
+`flutter run -d chrome` compiles and serves a debug build of about 1,500
+files, which can run out of memory on an 8 GB machine. For a demo, build once
+in release mode and serve the static files instead. Use three terminals,
+starting from the repository root.
+
+1. **MongoDB.** Check that the Windows service is running (no admin needed):
+   ```powershell
+   sc.exe query MongoDB
+   ```
+   If it says `STOPPED`, start it from an **administrator** terminal:
+   ```powershell
+   net start MongoDB
+   ```
+2. **Backend** (terminal 1):
+   ```bash
+   cd backend
+   npm run seed     # optional: resets the demo data
+   npm start        # API on http://localhost:5000
+   ```
+3. **Web app** (terminal 2). Build it once, then serve the build:
+   ```bash
+   cd frontend
+   flutter build web --release      # about 3 minutes; output in frontend/build/web
+   cd ..
+   npx serve frontend/build/web -l 8081 -s
+   ```
+   Open http://localhost:8081 and sign in, for example as
+   `canteen@foodloop.test` / `password123`.
+
+**After a code change**, rebuild and reload the browser. The running
+`npx serve` picks up the new files, so it does not need restarting:
+
+```bash
+cd frontend
+flutter build web --release
+```
+
+Backend changes need `npm start` to be stopped (Ctrl+C) and started again.
+
 ## 5. Test logins
 
 After `npm run seed`, every account uses the password **`password123`**.
